@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Zon File Manager
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<resources>
+    <string name="app_name">Zon</string>
+
+    <string name="perm_title">ต้องได้รับสิทธิ์เข้าถึงไฟล์</string>
+    <string name="perm_desc">เพื่อจัดการไฟล์ทั้งหมดในเครื่อง\nกรุณาอนุญาตการเข้าถึงไฟล์</string>
+    <string name="perm_btn">อนุญาตการเข้าถึง</string>
+
+    <string name="internal_storage">Internal Storage</string>
+    <string name="root">Root</string>
+    <string name="empty">ว่างเปล่า</string>
+    <string name="empty_desc">ไม่มีไฟล์หรือโฟลเดอร์ในที่นี้</string>
+    <string name="cannot_access">เข้าไม่ได้</string>
+    <string name="back_home">กลับไป Internal Storage</string>
+
+    <string name="search_hint">ค้นหา</string>
+    <string name="selected_count">%1$d รายการ</string>
+    <string name="selecting">เลือกอยู่</string>
+    <string name="items_count">%1$d รายการ</string>
+
+    <string name="menu_list_view">มุมมองรายการ</string>
+    <string name="menu_grid_view">มุมมองตาราง</string>
+    <string name="menu_sort">เรียงลำดับ</string>
+    <string name="menu_show_hidden">แสดงไฟล์ที่ซ่อนอยู่</string>
+    <string name="menu_hide_hidden">ซ่อนไฟล์ที่ซ่อนอยู่</string>
+    <string name="menu_select_all">เลือกทั้งหมด</string>
+    <string name="menu_settings">ตั้งค่า</string>
+    <string name="menu_storage_analyzer">วิเคราะห์พื้นที่</string>
+    <string name="menu_duplicate_finder">หาไฟล์ซ้ำ</string>
+    <string name="menu_app_manager">จัดการแอป</string>
+
+    <string name="action_open">เปิด</string>
+    <string name="action_copy">คัดลอก</string>
+    <string name="action_cut">ตัด</string>
+    <string name="action_rename">เปลี่ยนชื่อ</string>
+    <string name="action_share">แชร์</string>
+    <string name="action_info">ข้อมูล</string>
+    <string name="action_delete">ลบ</string>
+    <string name="action_compress">บีบอัด</string>
+    <string name="action_extract">แตกไฟล์ที่นี่</string>
+    <string name="action_extract_to">แตกไฟล์ไปที่...</string>
+    <string name="action_preview">ดูตัวอย่าง</string>
+    <string name="action_edit">แก้ไข</string>
+    <string name="action_open_with">เปิดด้วย...</string>
+    <string name="action_copy_path">คัดลอกที่อยู่</string>
+
+    <string name="dialog_new_folder">โฟลเดอร์ใหม่</string>
+    <string name="dialog_new_folder_desc">ตั้งชื่อโฟลเดอร์</string>
+    <string name="dialog_new_file">ไฟล์ข้อความใหม่</string>
+    <string name="dialog_new_file_desc">ตั้งชื่อไฟล์ (.txt)</string>
+    <string name="dialog_hint_folder">ชื่อโฟลเดอร์</string>
+    <string name="dialog_hint_file">ชื่อไฟล์</string>
+    <string name="dialog_rename">เปลี่ยนชื่อ</string>
+    <string name="dialog_hint_new_name">ชื่อใหม่</string>
+    <string name="dialog_delete_title">ลบ %1$d รายการ</string>
+    <string name="dialog_delete_desc">การกระทำนี้ไม่สามารถย้อนกลับได้</string>
+    <string name="dialog_ok">ตกลง</string>
+    <string name="dialog_cancel">ยกเลิก</string>
+    <string name="dialog_close">ปิด</string>
+
+    <string name="sort_title">เรียงลำดับตาม</string>
+    <string name="sort_name">ชื่อ</string>
+    <string name="sort_size">ขนาด</string>
+    <string name="sort_date">วันที่</string>
+
+    <string name="dialog_compress_title">สร้าง Archive</string>
+    <string name="dialog_extract_title">แตกไฟล์</string>
+    <string name="field_name">ชื่อไฟล์</string>
+    <string name="field_format">รูปแบบไฟล์</string>
+    <string name="field_level">ระดับการบีบอัด</string>
+    <string name="field_password">รหัสผ่าน (ไม่บังคับ)</string>
+    <string name="field_password_extract">รหัสผ่าน (ถ้ามี)</string>
+    <string name="field_password_hint">เว้นว่างถ้าไม่มี</string>
+    <string name="field_split_size">แบ่งไฟล์ทุก (MB)</string>
+    <string name="split_enable">แบ่งไฟล์ (Split)</string>
+    <string name="extract_to_same">แตกไฟล์ไปยังโฟลเดอร์เดียวกัน</string>
+
+    <string name="progress_error">เกิดข้อผิดพลาด</string>
+    <string name="progress_done">เสร็จสิ้น</string>
+    <string name="progress_cancel">ยกเลิก</string>
+    <string name="progress_cancelled">ยกเลิกแล้ว</string>
+
+    <string name="info_title">ข้อมูล</string>
+    <string name="info_name">ชื่อ</string>
+    <string name="info_path">ที่อยู่</string>
+    <string name="info_size">ขนาด</string>
+    <string name="info_modified">แก้ไขล่าสุด</string>
+    <string name="info_type">ประเภท</string>
+    <string name="info_perms">สิทธิ์</string>
+    <string name="info_owner">เจ้าของ</string>
+    <string name="info_md5">MD5</string>
+    <string name="info_sha1">SHA-1</string>
+    <string name="info_type_folder">โฟลเดอร์</string>
+    <string name="info_type_file">ไฟล์</string>
+
+    <string name="settings_title">ตั้งค่า</string>
+    <string name="settings_appearance">ธีม</string>
+    <string name="settings_language">ภาษา</string>
+    <string name="settings_root">Root Access</string>
+    <string name="settings_root_desc">เปิดใช้งานเพื่อเข้าถึงไฟล์ระบบ</string>
+    <string name="settings_root_check">ตรวจสอบ Root</string>
+    <string name="settings_root_granted">ได้รับสิทธิ์ Root</string>
+    <string name="settings_root_denied">ไม่ได้รับสิทธิ์ Root</string>
+    <string name="settings_about">เกี่ยวกับ</string>
+    <string name="settings_license">ลิขสิทธิ์</string>
+    <string name="settings_open_source">Open Source</string>
+    <string name="settings_version">เวอร์ชัน</string>
+
+    <string name="storage_analyzer_title">วิเคราะห์พื้นที่</string>
+    <string name="storage_total">พื้นที่ทั้งหมด</string>
+    <string name="storage_used">ใช้ไป</string>
+    <string name="storage_free">ว่าง</string>
+    <string name="storage_scanning">กำลังสแกน...</string>
+
+    <string name="dup_title">ไฟล์ซ้ำ</string>
+    <string name="dup_scanning">กำลังสแกน...</string>
+    <string name="dup_none">ไม่พบไฟล์ซ้ำ</string>
+    <string name="dup_found">พบ %1$d กลุ่ม</string>
+    <string name="dup_delete_selected">ลบที่เลือก</string>
+    <string name="dup_scan_hint">เลือกโฟลเดอร์เพื่อสแกน</string>
+
+    <string name="app_manager_title">จัดการแอป</string>
+    <string name="app_system">แอประบบ</string>
+    <string name="app_user">แอปผู้ใช้</string>
+    <string name="app_backup">สำรอง</string>
+    <string name="app_uninstall">ถอนการติดตั้ง</string>
+    <string name="app_open">เปิด</string>
+    <string name="app_info">ข้อมูลแอป</string>
+
+    <string name="text_editor_title">แก้ไขข้อความ</string>
+    <string name="text_editor_save">บันทึก</string>
+    <string name="text_editor_saved">บันทึกแล้ว</string>
+    <string name="text_editor_unsaved">ยังไม่บันทึก</string>
+
+    <string name="preview_archive_title">ดูใน Archive</string>
+    <string name="preview_archive_entries">%1$d ไฟล์</string>
+    <string name="preview_extract_this">แตกไฟล์นี้</string>
+
+    <string name="root_toast_granted">Root: เปิดใช้งานแล้ว</string>
+    <string name="root_toast_denied">Root: ไม่สามารถใช้ได้</string>
+
+    <string name="share_via">แชร์ผ่าน</string>
+    <string name="open_with">เปิดด้วย</string>
+
+    <string name="about_title">เกี่ยวกับ</string>
+    <string name="about_developer">นักพัฒนา</string>
+    <string name="about_language">ภาษา</string>
+    <string name="about_email">อีเมล</string>
+    <string name="about_license">ลิขสิทธิ์</string>
+    <string name="about_open_source">Open Source Licenses</string>
+    <string name="about_support">การสนับสนุน</string>
+    <string name="about_rate">ให้ดาวแอพ</string>
+    <string name="about_report_bug">รายงานบั๊ก</string>
+    <string name="about_share">แชร์ให้เพื่อน</string>
+    <string name="about_made_with">Made with ❤️ by Zon Project</string>
+</resources>

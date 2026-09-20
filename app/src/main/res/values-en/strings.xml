@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright (C) 2026 Zon File Manager
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<resources>
+    <string name="app_name">Zon</string>
+
+    <string name="perm_title">File Access Permission Required</string>
+    <string name="perm_desc">To manage all files on your device,\nplease grant file access.</string>
+    <string name="perm_btn">Grant Access</string>
+
+    <string name="internal_storage">Internal Storage</string>
+    <string name="root">Root</string>
+    <string name="empty">Empty</string>
+    <string name="empty_desc">No files or folders here</string>
+    <string name="cannot_access">Cannot Access</string>
+    <string name="back_home">Back to Internal Storage</string>
+
+    <string name="search_hint">Search</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="selecting">Selecting</string>
+    <string name="items_count">%1$d items</string>
+
+    <string name="menu_list_view">List view</string>
+    <string name="menu_grid_view">Grid view</string>
+    <string name="menu_sort">Sort</string>
+    <string name="menu_show_hidden">Show hidden files</string>
+    <string name="menu_hide_hidden">Hide hidden files</string>
+    <string name="menu_select_all">Select all</string>
+    <string name="menu_settings">Settings</string>
+    <string name="menu_storage_analyzer">Storage Analyzer</string>
+    <string name="menu_duplicate_finder">Duplicate Finder</string>
+    <string name="menu_app_manager">App Manager</string>
+
+    <string name="action_open">Open</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_cut">Cut</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_share">Share</string>
+    <string name="action_info">Info</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_compress">Compress</string>
+    <string name="action_extract">Extract here</string>
+    <string name="action_extract_to">Extract to...</string>
+    <string name="action_preview">Preview</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_open_with">Open with...</string>
+    <string name="action_copy_path">Copy path</string>
+
+    <string name="dialog_new_folder">New Folder</string>
+    <string name="dialog_new_folder_desc">Enter folder name</string>
+    <string name="dialog_new_file">New Text File</string>
+    <string name="dialog_new_file_desc">Enter file name (.txt)</string>
+    <string name="dialog_hint_folder">Folder name</string>
+    <string name="dialog_hint_file">File name</string>
+    <string name="dialog_rename">Rename</string>
+    <string name="dialog_hint_new_name">New name</string>
+    <string name="dialog_delete_title">Delete %1$d items</string>
+    <string name="dialog_delete_desc">This action cannot be undone</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_close">Close</string>
+
+    <string name="sort_title">Sort by</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_size">Size</string>
+    <string name="sort_date">Date</string>
+
+    <string name="dialog_compress_title">Create Archive</string>
+    <string name="dialog_extract_title">Extract</string>
+    <string name="field_name">File name</string>
+    <string name="field_format">Format</string>
+    <string name="field_level">Compression level</string>
+    <string name="field_password">Password (optional)</string>
+    <string name="field_password_extract">Password (if any)</string>
+    <string name="field_password_hint">Leave empty if none</string>
+    <string name="field_split_size">Split every (MB)</string>
+    <string name="split_enable">Split archive</string>
+    <string name="extract_to_same">Extract to same folder</string>
+
+    <string name="progress_error">Error</string>
+    <string name="progress_done">Done</string>
+    <string name="progress_cancel">Cancel</string>
+    <string name="progress_cancelled">Cancelled</string>
+
+    <string name="info_title">Info</string>
+    <string name="info_name">Name</string>
+    <string name="info_path">Path</string>
+    <string name="info_size">Size</string>
+    <string name="info_modified">Modified</string>
+    <string name="info_type">Type</string>
+    <string name="info_perms">Permissions</string>
+    <string name="info_owner">Owner</string>
+    <string name="info_md5">MD5</string>
+    <string name="info_sha1">SHA-1</string>
+    <string name="info_type_folder">Folder</string>
+    <string name="info_type_file">File</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_root">Root Access</string>
+    <string name="settings_root_desc">Enable to access system files</string>
+    <string name="settings_root_check">Check Root</string>
+    <string name="settings_root_granted">Root granted</string>
+    <string name="settings_root_denied">Root not available</string>
+    <string name="settings_about">About</string>
+    <string name="settings_license">License</string>
+    <string name="settings_open_source">Open Source</string>
+    <string name="settings_version">Version</string>
+
+    <string name="storage_analyzer_title">Storage Analyzer</string>
+    <string name="storage_total">Total</string>
+    <string name="storage_used">Used</string>
+    <string name="storage_free">Free</string>
+    <string name="storage_scanning">Scanning...</string>
+
+    <string name="dup_title">Duplicate Files</string>
+    <string name="dup_scanning">Scanning...</string>
+    <string name="dup_none">No duplicates found</string>
+    <string name="dup_found">%1$d groups found</string>
+    <string name="dup_delete_selected">Delete selected</string>
+    <string name="dup_scan_hint">Select folder to scan</string>
+
+    <string name="app_manager_title">App Manager</string>
+    <string name="app_system">System apps</string>
+    <string name="app_user">User apps</string>
+    <string name="app_backup">Backup</string>
+    <string name="app_uninstall">Uninstall</string>
+    <string name="app_open">Open</string>
+    <string name="app_info">App info</string>
+
+    <string name="text_editor_title">Text Editor</string>
+    <string name="text_editor_save">Save</string>
+    <string name="text_editor_saved">Saved</string>
+    <string name="text_editor_unsaved">Unsaved</string>
+
+    <string name="preview_archive_title">Archive Preview</string>
+    <string name="preview_archive_entries">%1$d files</string>
+    <string name="preview_extract_this">Extract this</string>
+
+    <string name="root_toast_granted">Root: Enabled</string>
+    <string name="root_toast_denied">Root: Not available</string>
+
+    <string name="share_via">Share via</string>
+    <string name="open_with">Open with</string>
+
+    <string name="about_title">About</string>
+    <string name="about_developer">Developer</string>
+    <string name="about_language">Language</string>
+    <string name="about_email">Email</string>
+    <string name="about_license">License</string>
+    <string name="about_open_source">Open Source Licenses</string>
+    <string name="about_support">Support</string>
+    <string name="about_rate">Rate this app</string>
+    <string name="about_report_bug">Report a bug</string>
+    <string name="about_share">Share with friends</string>
+    <string name="about_made_with">Made with ❤️ by Zon Project</string>
+</resources>
