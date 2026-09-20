@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -60,7 +61,7 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val maxHz = window.windowManager.defaultDisplay.supportedModes.maxOfOrNull { it.refreshRate } ?: 0f
             if (maxHz > 0f) {
-                window.decorView.setFrameRate(
+                window.setFrameRate(
                     maxHz,
                     android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
                     android.view.Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS
