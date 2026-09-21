@@ -173,15 +173,6 @@ val libraries = listOf(
         "Image Loading",
         Icons.Outlined.Image,
         ZonColors.IconImage
-    ),
-    LibraryLicense(
-        "DocumentFile",
-        "1.0.1",
-        "Apache 2.0",
-        "https://developer.android.com/jetpack/androidx/releases/documentfile",
-        "SAF File Access",
-        Icons.Outlined.Folder,
-        ZonColors.IconFolder
     )
 )
 
