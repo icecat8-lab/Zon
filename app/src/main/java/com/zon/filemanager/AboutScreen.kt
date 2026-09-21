@@ -131,7 +131,7 @@ fun AboutScreen(viewModel: FileManagerViewModel) {
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
-                    "แอพจัดการไฟล์ที่ทันสมัย รวดเร็ว ปลอดภัย\nรองรับการบีบอัด/แตกไฟล์มากกว่า 12 รูปแบบ\nUI สไตล์ iOS ทำงานบน Jetpack Compose",
+                    "แอพจัดการไฟล์ที่ทันสมัย รวดเร็ว ปลอดภัย",
                     color = ZonColors.TextSecondary,
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center,
@@ -146,7 +146,7 @@ fun AboutScreen(viewModel: FileManagerViewModel) {
                 AboutItem(
                     icon = Icons.Outlined.Person,
                     title = "นักพัฒนา",
-                    value = "Zon Project",
+                    value = "Icecat",
                     tint = ZonColors.Accent
                 )
                 AboutItem(
