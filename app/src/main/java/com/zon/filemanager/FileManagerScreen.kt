@@ -181,9 +181,6 @@ fun FileManagerScreen(
                             onGoRoot = { viewModel.goToRoot() },
                             onGoInternal = { viewModel.goToInternalStorage() },
                             onOpenSettings = { viewModel.setScreen(Screen.SETTINGS) },
-                            onOpenStorageAnalyzer = { viewModel.openStorageAnalyzer() },
-                            onOpenDupFinder = { viewModel.openDuplicateFinder() },
-                            onOpenAppManager = { viewModel.openAppManager() },
                             onOpenUsbOtg = {
                                 val usbVols = state.usbVolumes.filter { it.isRemovable && !it.isPrimary }
                                 if (usbVols.isNotEmpty()) {
@@ -200,7 +197,6 @@ fun FileManagerScreen(
                             onOpenFavorites = { viewModel.openFavorites() },
                             onOpenRecent = { viewModel.openRecent() },
                             onAddTab = { viewModel.addTab() },
-                            onToggleDualPane = { viewModel.toggleDualPane() }
                         )
                     }
                 }
@@ -283,47 +279,7 @@ fun FileManagerScreen(
                 .fillMaxSize()
                 .background(Brush.verticalGradient(listOf(ZonColors.DeepBlack, ZonColors.Black)))
         ) {
-            if (state.isDualPane) {
-                Row(modifier = Modifier.fillMaxSize()) {
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        FilePane(
-                            files = state.files,
-                            selectedFiles = state.selectedFiles,
-                            isSelectionMode = state.isSelectionMode,
-                            isLoading = state.isLoading,
-                            errorMessage = state.errorMessage,
-                            isGridView = false,
-                            dateFormat = dateFormat,
-                            onItemClick = { viewModel.navigateToFolder(it) },
-                            onItemLongClick = { file ->
-                                if (!state.isSelectionMode) {
-                                    viewModel.toggleSelection(file)
-                                    contextMenuFile = file
-                                } else viewModel.toggleSelection(file)
-                            },
-                            onGoHome = { viewModel.goToInternalStorage() }
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .fillMaxHeight()
-                            .background(ZonColors.Separator)
-                    )
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                        SecondPane(
-                            path = state.secondPanePath,
-                            files = state.secondPaneFiles,
-                            selectedFiles = state.secondPaneSelected,
-                            dateFormat = dateFormat,
-                            onItemClick = { viewModel.navigateSecondPane(it) },
-                            onItemLongClick = { viewModel.toggleSecondPaneSelection(it) },
-                            onNavigateUp = { viewModel.navigateSecondPaneUp() },
-                            onCopy = { viewModel.copyFromPane2ToPane1() }
-                        )
-                    }
-                }
-            } else {
+
                 AnimatedContent(
                     targetState = Triple(state.isLoading, state.files.isEmpty(), state.isGridView),
                     transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) },
@@ -363,7 +319,7 @@ fun FileManagerScreen(
                         )
                     }
                 }
-            }
+            
         }
     }
 
@@ -618,93 +574,6 @@ fun FilePane(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SecondPane(
-    path: String,
-    files: List<FileItem>,
-    selectedFiles: Set<String>,
-    dateFormat: SimpleDateFormat,
-    onItemClick: (FileItem) -> Unit,
-    onItemLongClick: (FileItem) -> Unit,
-    onNavigateUp: () -> Unit,
-    onCopy: () -> Unit
-) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        Surface(color = ZonColors.DarkSurface) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onNavigateUp) {
-                    Icon(
-                        Icons.Filled.ArrowBackIosNew,
-                        null,
-                        tint = ZonColors.TextPrimary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                Text(
-                    File(path).name.ifEmpty { if (path == "/") "Root" else "Storage" },
-                    color = ZonColors.TextPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                if (selectedFiles.isNotEmpty()) {
-                    IconButton(onClick = onCopy) {
-                        Icon(
-                            Icons.Outlined.ContentCopy,
-                            null,
-                            tint = ZonColors.Accent,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-        }
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(8.dp)
-        ) {
-            items(files, key = { it.path }) { file ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (selectedFiles.contains(file.path)) ZonColors.Selected else Color.Transparent)
-                        .combinedClickable(
-                            onClick = { onItemClick(file) },
-                            onLongClick = { onItemLongClick(file) }
-                        )
-                        .padding(horizontal = 8.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier.size(30.dp).clip(RoundedCornerShape(8.dp))
-                            .background(file.getIconColor().copy(alpha = 0.14f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(file.getIcon(), null, tint = file.getIconColor(), modifier = Modifier.size(16.dp))
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        file.name,
-                        color = ZonColors.TextPrimary,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun PremiumLoading() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(color = ZonColors.Accent, strokeWidth = 3.dp, modifier = Modifier.size(44.dp))
@@ -795,14 +664,10 @@ fun NormalTopBar(
     onGoRoot: () -> Unit,
     onGoInternal: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenStorageAnalyzer: () -> Unit,
-    onOpenDupFinder: () -> Unit,
-    onOpenAppManager: () -> Unit,
     onOpenUsbOtg: () -> Unit,
     onOpenFavorites: () -> Unit,
     onOpenRecent: () -> Unit,
     onAddTab: () -> Unit,
-    onToggleDualPane: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -871,9 +736,6 @@ fun NormalTopBar(
                         PremiumDropdownItem(Icons.Outlined.Tab, "เปิดแท็บใหม่") {
                             menuExpanded = false; onAddTab()
                         }
-                        PremiumDropdownItem(Icons.Outlined.VerticalSplit, "Dual Pane") {
-                            menuExpanded = false; onToggleDualPane()
-                        }
                         HorizontalDivider(color = ZonColors.Separator, modifier = Modifier.padding(vertical = 4.dp))
                         PremiumDropdownItem(
                             if (state.isGridView) Icons.Outlined.ViewList else Icons.Outlined.GridView,
@@ -888,16 +750,6 @@ fun NormalTopBar(
                         ) { menuExpanded = false; onToggleHidden() }
                         PremiumDropdownItem(Icons.Outlined.SelectAll, stringResource(R.string.menu_select_all)) {
                             menuExpanded = false; onSelectAll()
-                        }
-                        HorizontalDivider(color = ZonColors.Separator, modifier = Modifier.padding(vertical = 4.dp))
-                        PremiumDropdownItem(Icons.Outlined.PieChart, stringResource(R.string.menu_storage_analyzer)) {
-                            menuExpanded = false; onOpenStorageAnalyzer()
-                        }
-                        PremiumDropdownItem(Icons.Outlined.ContentCopy, stringResource(R.string.menu_duplicate_finder)) {
-                            menuExpanded = false; onOpenDupFinder()
-                        }
-                        PremiumDropdownItem(Icons.Outlined.Apps, stringResource(R.string.menu_app_manager)) {
-                            menuExpanded = false; onOpenAppManager()
                         }
                         HorizontalDivider(color = ZonColors.Separator, modifier = Modifier.padding(vertical = 4.dp))
                         PremiumDropdownItem(Icons.Outlined.Settings, stringResource(R.string.menu_settings)) {

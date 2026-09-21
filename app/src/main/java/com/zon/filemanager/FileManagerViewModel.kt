@@ -58,10 +58,6 @@ data class FileManagerState(
     val currentPath: String = INTERNAL_STORAGE_ROOT,
     val files: List<FileItem> = emptyList(),
     val selectedFiles: Set<String> = emptySet(),
-    val isDualPane: Boolean = false,
-    val secondPanePath: String = INTERNAL_STORAGE_ROOT,
-    val secondPaneFiles: List<FileItem> = emptyList(),
-    val secondPaneSelected: Set<String> = emptySet(),
     val clipboardFiles: List<FileItem> = emptyList(),
     val clipboardMode: ClipboardMode = ClipboardMode.NONE,
     val isLoading: Boolean = false,
@@ -805,80 +801,6 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
         _state.value = s.copy(tabs = remaining, activeTabId = newActiveId)
         val newTab = remaining.first { it.id == newActiveId }
         loadDirectory(newTab.path)
-    }
-
-    // ==================== Dual Pane ====================
-
-    fun toggleDualPane() {
-        val enabled = !_state.value.isDualPane
-        _state.value = _state.value.copy(isDualPane = enabled)
-        if (enabled) loadSecondPane(_state.value.secondPanePath)
-    }
-
-    fun loadSecondPane(path: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val dir = File(path)
-                if (!dir.exists() || !dir.isDirectory) return@launch
-                val files = dir.listFiles()?.map { it.toFileItem() }
-                    ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
-                withContext(Dispatchers.Main) {
-                    _state.value = _state.value.copy(
-                        secondPanePath = path,
-                        secondPaneFiles = files,
-                        secondPaneSelected = emptySet()
-                    )
-                }
-            } catch (e: Exception) { }
-        }
-    }
-
-    fun navigateSecondPane(folder: FileItem) {
-        if (folder.isDirectory) loadSecondPane(folder.path)
-    }
-
-    fun navigateSecondPaneUp() {
-        val cur = File(_state.value.secondPanePath)
-        val parent = cur.parentFile
-        if (parent != null) loadSecondPane(parent.absolutePath)
-    }
-
-    fun toggleSecondPaneSelection(file: FileItem) {
-        val set = _state.value.secondPaneSelected.toMutableSet()
-        if (!set.add(file.path)) set.remove(file.path)
-        _state.value = _state.value.copy(secondPaneSelected = set)
-    }
-
-    fun copyFromPane1ToPane2() {
-        val src = _state.value.selectedFiles.toList()
-        if (src.isEmpty()) return
-        viewModelScope.launch(Dispatchers.IO) {
-            src.forEach { path ->
-                val srcFile = File(path)
-                val dst = File(_state.value.secondPanePath, srcFile.name)
-                if (srcFile.exists()) copyRecursive(srcFile, dst)
-            }
-            withContext(Dispatchers.Main) {
-                clearSelection()
-                loadSecondPane(_state.value.secondPanePath)
-            }
-        }
-    }
-
-    fun copyFromPane2ToPane1() {
-        val src = _state.value.secondPaneSelected.toList()
-        if (src.isEmpty()) return
-        viewModelScope.launch(Dispatchers.IO) {
-            src.forEach { path ->
-                val srcFile = File(path)
-                val dst = File(_state.value.currentPath, srcFile.name)
-                if (srcFile.exists()) copyRecursive(srcFile, dst)
-            }
-            withContext(Dispatchers.Main) {
-                _state.value = _state.value.copy(secondPaneSelected = emptySet())
-                refresh()
-            }
-        }
     }
 
     // ==================== Favorites / Recent ====================
