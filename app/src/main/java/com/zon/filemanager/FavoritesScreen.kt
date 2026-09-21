@@ -26,7 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.sp
 fun FavoritesScreen(viewModel: FileManagerViewModel) {
     val state by viewModel.state.collectAsState()
 
-    BackHandler(enabled = true) { viewModel.setScreen(Screen.FILES) }
+    BackHandler(enabled = true) { viewModel.setScreen(Screen.HOME) }
 
     Column(
         modifier = Modifier
@@ -59,7 +59,7 @@ fun FavoritesScreen(viewModel: FileManagerViewModel) {
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { viewModel.setScreen(Screen.FILES) }) {
+                IconButton(onClick = { viewModel.setScreen(Screen.HOME) }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = ZonColors.TextPrimary)
                 }
                 Text(
@@ -101,8 +101,8 @@ fun FavoritesScreen(viewModel: FileManagerViewModel) {
                 items(state.favorites, key = { it.path }) { file ->
                     ListItemRow(
                         file = file,
-                        onClick = { viewModel.openFromList(file) },
-                        onRemove = { viewModel.removeFavorite(file.path) }
+                        onClick = { viewModel.openFile(file) },
+                        onRemove = { viewModel.toggleFavorite(file) }
                     )
                 }
             }
@@ -152,7 +152,7 @@ fun ListItemRow(file: FileItem, onClick: () -> Unit, onRemove: () -> Unit) {
             Icon(Icons.Outlined.Close, null, tint = ZonColors.TextTertiary, modifier = Modifier.size(18.dp))
         }
         if (file.isDirectory) {
-            Icon(Icons.Filled.ChevronRight, null, tint = ZonColors.TextTertiary, modifier = Modifier.size(18.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = ZonColors.TextTertiary, modifier = Modifier.size(18.dp))
         }
     }
 }
