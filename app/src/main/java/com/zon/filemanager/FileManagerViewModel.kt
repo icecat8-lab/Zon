@@ -22,6 +22,8 @@ import android.net.Uri
 import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +31,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
@@ -406,31 +407,25 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
         val s = _state.value
         if (s.clipboardFiles.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
-            for (item in s.clipboardFiles) {
+            s.clipboardFiles.forEach { item ->
                 currentCoroutineContext().ensureActive()
                 val src = File(item.path)
                 val dst = File(s.currentPath, item.name)
-                if (!src.exists()) continue
-
-                if (src.canonicalPath == dst.canonicalPath) continue
-                if (src.isDirectory && dst.canonicalPath.startsWith(src.canonicalPath + File.separator)) {
-                    _state.value = _state.value.copy(errorMessage = "ไม่สามารถวางโฟลเดอร์ไว้ภายในตัวเองได้")
-                    continue
-                }
-                if (dst.exists()) {
-                    _state.value = _state.value.copy(errorMessage = "มีไฟล์/โฟลเดอร์ปลายทางอยู่แล้ว: ${item.name}")
-                    continue
-                }
-
-                if (s.clipboardMode == ClipboardMode.CUT) {
-                    if (!src.renameTo(dst)) {
-                        copyRecursive(src, dst)
-                        if (!src.deleteRecursively()) {
-                            throw IOException("ย้ายไฟล์ไม่สำเร็จ")
-                        }
+                if (src.exists()) {
+                    if (src.canonicalPath == dst.canonicalPath) continue
+                    if (src.isDirectory && dst.canonicalPath.startsWith(src.canonicalPath + File.separator)) {
+                        _state.value = _state.value.copy(errorMessage = "ไม่สามารถวางโฟลเดอร์ไว้ภายในตัวเองได้")
+                        continue
                     }
-                } else {
-                    copyRecursive(src, dst)
+                    if (dst.exists()) {
+                        _state.value = _state.value.copy(errorMessage = "มีไฟล์/โฟลเดอร์ปลายทางอยู่แล้ว: ${item.name}")
+                        continue
+                    }
+                    if (s.clipboardMode == ClipboardMode.CUT) {
+                        if (!src.renameTo(dst)) copyRecursive(src, dst).also { if (src.deleteRecursively().not()) throw IOException("ย้ายไฟล์ไม่สำเร็จ") }
+                    } else {
+                        copyRecursive(src, dst)
+                    }
                 }
             }
             _state.value = _state.value.copy(clipboardFiles = emptyList(), clipboardMode = ClipboardMode.NONE)

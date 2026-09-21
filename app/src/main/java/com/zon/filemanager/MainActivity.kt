@@ -37,10 +37,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -61,11 +59,9 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val maxHz = window.windowManager.defaultDisplay.supportedModes.maxOfOrNull { it.refreshRate } ?: 0f
             if (maxHz > 0f) {
-                window.setFrameRate(
-                    maxHz,
-                    android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
-                    android.view.Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS
-                )
+                window.attributes = window.attributes.apply {
+                    preferredRefreshRate = maxHz
+                }
             }
         }
         setContent {
@@ -148,7 +144,7 @@ fun ZonApp(viewModel: FileManagerViewModel) {
 @Composable
 fun PermissionGate(content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = (context as? ComponentActivity)?.lifecycle
     var hasPermission by remember { mutableStateOf(PermissionHelper.hasAllFilesAccess(context)) }
     var requestedOnce by rememberSaveable { mutableStateOf(false) }
 
@@ -168,8 +164,8 @@ fun PermissionGate(content: @Composable () -> Unit) {
                 hasPermission = PermissionHelper.hasAllFilesAccess(context)
             }
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        lifecycleOwner?.addObserver(observer)
+        onDispose { lifecycleOwner?.removeObserver(observer) }
     }
 
     LaunchedEffect(Unit) {
