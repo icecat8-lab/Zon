@@ -13,7 +13,10 @@ find_library(
         log
 )
 
+find_package(ZLIB REQUIRED)
+
 target_link_libraries(
         zonengine
         ${log-lib}
+        ZLIB::ZLIB
 )
