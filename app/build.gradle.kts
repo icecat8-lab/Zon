@@ -27,7 +27,6 @@ android {
         }
     }
 
-    // 1. เปิดใช้งาน Jetpack Compose (แก้ไข Unresolved reference: compose / Material3)[span_6](start_span)[span_6](end_span)
     buildFeatures {
         compose = true
     }
@@ -52,7 +51,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
 
-    // 2. Jetpack Compose & Material 3 Dependencies (แก้ไข Unresolved reference ใน Screen ต่างๆ)[span_7](start_span)[span_7](end_span)
+    // Jetpack Compose & Material 3
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -60,10 +59,16 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // 3. Apache Commons Compress & IO (แก้ไข Unresolved reference ใน ArchivePreview.kt)[span_8](start_span)[span_8](end_span)
+    // Navigation Compose (จำเป็นสำหรับ FileManagerScreen.kt)
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Image Loading (สำหรับแสดง Thumbnail รูปภาพ)
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Archive & Compression Libraries (สำหรับ ArchivePreview.kt)
     implementation("org.apache.commons:commons-compress:1.26.0")
     implementation("commons-io:commons-io:2.15.1")
-    implementation("org.tukaani:xz:1.9") // รองรับไฟล์ .xz
+    implementation("org.tukaani:xz:1.9")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
