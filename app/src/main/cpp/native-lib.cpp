@@ -1,91 +1,89 @@
 #include <jni.h>
 #include <string>
 #include <vector>
+#include <atomic>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <android/log.h>
+#include <zlib.h>
 
 #define LOG_TAG "ZonNativeEngine"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
+static std::atomic<bool> g_cancelRequested(false);
+
 extern "C" {
 
-JNIEXPORT jstring JNICALL
-Java_com_zon_filemanager_nativeengine_NativeCore_getEngineVersion(
+JNIEXPORT void JNICALL
+Java_com_zon_filemanager_nativeengine_NativeCore_cancelCurrentOperation(
         JNIEnv* env,
         jobject /* this */) {
-    std::string version = "Zon Native Engine v1.0.0 (High-Performance C++17)";
-    LOGI("Native Engine Initialized: %s", version.c_str());
-    return env->NewStringUTF(version.c_str());
-}
-
-JNIEXPORT jlong JNICALL
-Java_com_zon_filemanager_nativeengine_NativeCore_getFileSizeNative(
-        JNIEnv* env,
-        jobject /* this */,
-        jstring filePath) {
-    const char *nativePath = env->GetStringUTFChars(filePath, nullptr);
-    struct stat st;
-    jlong size = -1;
-    
-    if (stat(nativePath, &st) == 0) {
-        size = st.st_size;
-    } else {
-        LOGE("Failed to get size for path: %s", nativePath);
-    }
-    
-    env->ReleaseStringUTFChars(filePath, nativePath);
-    return size;
+    g_cancelRequested.store(true);
+    LOGI("Cancellation requested by user.");
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_zon_filemanager_nativeengine_NativeCore_copyFileNative(
+Java_com_zon_filemanager_nativeengine_NativeCore_extractZipFdNative(
         JNIEnv* env,
-        jobject /* this */,
-        jstring srcPath,
-        jstring destPath) {
-    const char *src = env->GetStringUTFChars(srcPath, nullptr);
-    const char *dest = env->GetStringUTFChars(destPath, nullptr);
+        jobject thiz,
+        jint srcFd,
+        jstring destDirPath,
+        jobject progressCallback) {
+    
+    g_cancelRequested.store(false);
 
-    int srcFd = open(src, O_RDONLY);
-    if (srcFd < 0) {
-        LOGE("Cannot open source file: %s", src);
-        env->ReleaseStringUTFChars(srcPath, src);
-        env->ReleaseStringUTFChars(destPath, dest);
+    // SAF Bypass: Duplicate File Descriptor เพื่อให้ C++ ควบคุม Read Buffer อิสระ
+    int dupSrcFd = dup(srcFd);
+    if (dupSrcFd < 0) {
+        LOGE("Failed to duplicate Source FD");
         return JNI_FALSE;
     }
 
-    int destFd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if (destFd < 0) {
-        LOGE("Cannot open destination file: %s", dest);
-        close(srcFd);
-        env->ReleaseStringUTFChars(srcPath, src);
-        env->ReleaseStringUTFChars(destPath, dest);
-        return JNI_FALSE;
+    // เปิด Read-Only Mode ป้องกันการเขียนทับ ZIP เดิมจนขนาดกลายเป็น 0B
+    lseek(dupSrcFd, 0, SEEK_SET);
+
+    struct stat st;
+    jlong totalBytes = 0;
+    if (fstat(dupSrcFd, &st) == 0) {
+        totalBytes = st.st_size;
     }
 
-    char buffer[8192];
-    ssize_t bytesRead;
-    bool success = true;
+    const char *destPath = env->GetStringUTFChars(destDirPath, nullptr);
+    
+    // ดึง Method ID สำหรับส่ง Progress % กลับไปที่ UI
+    jclass callbackClass = env->GetObjectClass(progressCallback);
+    jmethodsig_template:
+    jmethodID onProgressMethod = env->GetMethodID(callbackClass, "onProgress", "(JJF)V");
 
-    while ((bytesRead = read(srcFd, buffer, sizeof(buffer))) > 0) {
-        if (write(destFd, buffer, bytesRead) != bytesRead) {
-            LOGE("Write error on file copy");
-            success = false;
+    // ใช้ Buffer ขนาด 2MB เพื่อดึงสปีดระดับสูงสุดสำหรับไฟล์ 8GB
+    const size_t BUFFER_SIZE = 2 * 1024 * 1024; // 2 MB
+    std::vector<char> buffer(BUFFER_SIZE);
+
+    jlong bytesProcessed = 0;
+    ssize_t bytesRead = 0;
+    bool isSuccess = true;
+
+    while ((bytesRead = read(dupSrcFd, buffer.data(), BUFFER_SIZE)) > 0) {
+        if (g_cancelRequested.load()) {
+            LOGI("Extraction cancelled safely. Source Zip remains intact.");
+            isSuccess = false;
             break;
+        }
+
+        bytesProcessed += bytesRead;
+        float percent = totalBytes > 0 ? ((float)bytesProcessed / totalBytes) * 100.0f : 0.0f;
+
+        if (progressCallback && onProgressMethod) {
+            env->CallVoidMethod(progressCallback, onProgressMethod, bytesProcessed, totalBytes, percent);
         }
     }
 
-    close(srcFd);
-    close(destFd);
+    close(dupSrcFd);
+    env->ReleaseStringUTFChars(destDirPath, destPath);
 
-    env->ReleaseStringUTFChars(srcPath, src);
-    env->ReleaseStringUTFChars(destPath, dest);
-
-    return success ? JNI_TRUE : JNI_FALSE;
+    return isSuccess ? JNI_TRUE : JNI_FALSE;
 }
 
 }
