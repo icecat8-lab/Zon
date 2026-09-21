@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-// app/src/main/java/com/zon/filemanager/FavoritesRecentManager.kt
 package com.zon.filemanager
 
 import android.content.Context
 import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
 
 class FavoritesRecentManager(context: Context) {
 
