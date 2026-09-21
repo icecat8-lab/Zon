@@ -24,12 +24,9 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.zon.filemanager.ui.theme.ZonTheme
 
 class MainActivity : ComponentActivity() {
@@ -44,68 +41,14 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val navController = rememberNavController()
+                    val state by viewModel.state.collectAsState()
 
-                    NavHost(
-                        navController = navController,
-                        startDestination = "file_manager"
-                    ) {
-                        composable("file_manager") {
-                            FileManagerScreen(
-                                viewModel = viewModel,
-                                navController = navController
-                            )
-                        }
-
-                        composable(
-                            route = "preview?path={path}",
-                            arguments = listOf(navArgument("path") {
-                                type = NavType.StringType
-                                nullable = true
-                            })
-                        ) { backStackEntry ->
-                            val path = backStackEntry.arguments?.getString("path") ?: ""
-                            PreviewScreen(
-                                filePath = path,
-                                navController = navController
-                            )
-                        }
-
-                        composable(
-                            route = "archive_preview?path={path}",
-                            arguments = listOf(navArgument("path") {
-                                type = NavType.StringType
-                                nullable = true
-                            })
-                        ) { backStackEntry ->
-                            val path = backStackEntry.arguments?.getString("path") ?: ""
-                            ArchivePreviewScreen(
-                                filePath = path,
-                                navController = navController
-                            )
-                        }
-
-                        composable("settings") {
-                            SettingsScreen(navController = navController)
-                        }
-
-                        composable("about") {
-                            AboutScreen(navController = navController)
-                        }
-
-                        composable("favorites") {
-                            FavoritesScreen(
-                                viewModel = viewModel,
-                                navController = navController
-                            )
-                        }
-
-                        composable("recent") {
-                            RecentScreen(
-                                viewModel = viewModel,
-                                navController = navController
-                            )
-                        }
+                    when (state.currentScreen) {
+                        Screen.FILES -> FileManagerScreen(viewModel = viewModel)
+                        Screen.SETTINGS -> SettingsScreen(viewModel = viewModel)
+                        Screen.ABOUT -> AboutScreen(viewModel = viewModel)
+                        Screen.TEXT_EDITOR -> TextEditorScreen(viewModel = viewModel)
+                        else -> FileManagerScreen(viewModel = viewModel)
                     }
                 }
             }
