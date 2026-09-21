@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-// app/src/main/java/com/zon/filemanager/LicensesScreen.kt
 package com.zon.filemanager
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -94,15 +92,6 @@ val libraries = listOf(
         "Async Programming",
         Icons.Outlined.Refresh,
         ZonColors.IconDoc
-    ),
-    LibraryLicense(
-        "7-Zip JBinding",
-        "16.02-2.02",
-        "LGPL 2.1",
-        "https://github.com/omicronapps/7-Zip-JBinding-4Android",
-        "Native 7z Engine",
-        Icons.Outlined.FolderZip,
-        ZonColors.IconArchive
     ),
     LibraryLicense(
         "Zip4j",
