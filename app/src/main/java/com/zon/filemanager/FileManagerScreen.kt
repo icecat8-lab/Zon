@@ -16,65 +16,158 @@
 
 package com.zon.filemanager
 
-import android.net.Uri
 import android.os.Environment
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FileManagerScreen(navController: NavController) {
-    var currentPath by remember { mutableStateOf(Environment.getExternalStorageDirectory().absolutePath) }
-    var fileList by remember { mutableStateOf<List<File>>(emptyList()) }
+fun FileManagerScreen(viewModel: FileManagerViewModel) {
+    val state by viewModel.state.collectAsState()
+
+    val rootPath = remember { Environment.getExternalStorageDirectory().absolutePath }
+    var fileList by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(currentPath) {
+    LaunchedEffect(state.currentPath) {
         isLoading = true
         fileList = withContext(Dispatchers.IO) {
-            val dir = File(currentPath)
-            dir.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: emptyList()
+            val dir = File(state.currentPath)
+            dir.listFiles()
+                ?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+                ?.map { f ->
+                    FileItem(
+                        name = f.name,
+                        path = f.absolutePath,
+                        isDirectory = f.isDirectory,
+                        size = if (f.isDirectory) 0L else f.length(),
+                        lastModified = f.lastModified(),
+                        extension = f.extension
+                    )
+                } ?: emptyList()
         }
         isLoading = false
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = File(currentPath).name.ifEmpty { "Root" }, maxLines = 1) }
-            )
+    BackHandler(enabled = state.currentPath != rootPath) {
+        viewModel.navigateUp()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ZonColors.DeepBlack)
+    ) {
+        Surface(color = ZonColors.DeepBlack) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (state.currentPath != rootPath) {
+                    IconButton(onClick = { viewModel.navigateUp() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = ZonColors.TextPrimary)
+                    }
+                } else {
+                    Spacer(Modifier.width(48.dp))
+                }
+                Text(
+                    text = File(state.currentPath).name.ifEmpty { stringResource(R.string.internal_storage) },
+                    color = ZonColors.TextPrimary,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { viewModel.openRecent() }) {
+                    Icon(Icons.Outlined.History, null, tint = ZonColors.TextPrimary)
+                }
+                IconButton(onClick = { viewModel.openFavorites() }) {
+                    Icon(Icons.Outlined.Star, null, tint = ZonColors.TextPrimary)
+                }
+                IconButton(onClick = { viewModel.setScreen(Screen.SETTINGS) }) {
+                    Icon(Icons.Outlined.Settings, null, tint = ZonColors.TextPrimary)
+                }
+            }
         }
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(items = fileList, key = { it.absolutePath }) { file ->
-                        FileRowItem(
-                            file = file,
-                            onClick = {
-                                if (file.isDirectory) {
-                                    currentPath = file.absolutePath
-                                } else if (file.extension in listOf("zip", "7z", "rar")) {
-                                    navController.navigate("archive_preview/${Uri.encode(file.absolutePath)}")
-                                } else if (file.extension in listOf("txt", "json", "log", "md")) {
-                                    navController.navigate("text_editor/${Uri.encode(file.absolutePath)}")
-                                }
-                            }
-                        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+        ) {
+            when {
+                isLoading -> {
+                    CircularProgressIndicator(
+                        color = ZonColors.Accent,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                fileList.isEmpty() -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .background(ZonColors.Surface, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.FolderOpen,
+                                null,
+                                tint = ZonColors.TextTertiary,
+                                modifier = Modifier.size(44.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(20.dp))
+                        Text(stringResource(R.string.empty), color = ZonColors.TextSecondary, fontSize = 15.sp)
+                        Spacer(Modifier.height(6.dp))
+                        Text(stringResource(R.string.empty_desc), color = ZonColors.TextTertiary, fontSize = 12.sp)
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(fileList, key = { it.path }) { file ->
+                            FileManagerRow(
+                                file = file,
+                                isFavorite = state.favorites.any { it.path == file.path },
+                                onClick = { viewModel.openFile(file) },
+                                onToggleFavorite = { viewModel.toggleFavorite(file) }
+                            )
+                        }
                     }
                 }
             }
@@ -83,29 +176,56 @@ fun FileManagerScreen(navController: NavController) {
 }
 
 @Composable
-fun FileRowItem(file: File, onClick: () -> Unit) {
-    var fileSizeText by remember(file.absolutePath) { mutableStateOf("") }
-
-    LaunchedEffect(file.absolutePath) {
-        if (!file.isDirectory) {
-            fileSizeText = withContext(Dispatchers.IO) {
-                "${file.length() / 1024} KB"
-            }
+fun FileManagerRow(
+    file: FileItem,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onToggleFavorite: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(file.getIconColor().copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(file.getIcon(), null, tint = file.getIconColor(), modifier = Modifier.size(22.dp))
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                file.name,
+                color = ZonColors.TextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                if (file.isDirectory) "โฟลเดอร์" else file.getReadableSize(),
+                color = ZonColors.TextTertiary,
+                fontSize = 11.sp
+            )
+        }
+        IconButton(onClick = onToggleFavorite) {
+            Icon(
+                if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                contentDescription = null,
+                tint = if (isFavorite) ZonColors.Warning else ZonColors.TextTertiary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        if (file.isDirectory) {
+            Icon(Icons.Filled.ChevronRight, null, tint = ZonColors.TextTertiary, modifier = Modifier.size(18.dp))
         }
     }
-
-    ListItem(
-        headlineContent = { Text(file.name, maxLines = 1) },
-        supportingContent = { 
-            Text(if (file.isDirectory) "Folder" else fileSizeText) 
-        },
-        leadingContent = {
-            Icon(
-                imageVector = if (file.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
-                contentDescription = null,
-                tint = if (file.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-            )
-        },
-        modifier = Modifier.clickable { onClick() }
-    )
 }
