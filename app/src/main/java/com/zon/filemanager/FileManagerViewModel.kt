@@ -407,7 +407,7 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
         val s = _state.value
         if (s.clipboardFiles.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
-            s.clipboardFiles.forEach { item ->
+            for (item in s.clipboardFiles) {
                 currentCoroutineContext().ensureActive()
                 val src = File(item.path)
                 val dst = File(s.currentPath, item.name)
