@@ -2,6 +2,8 @@ name: Build Zon APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
 
 permissions:
   contents: write
@@ -19,15 +21,16 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+        cache: gradle
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v4
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      run: ./gradlew assembleDebug --stacktrace
 
     - name: Get current date
       id: date
@@ -41,17 +44,20 @@ jobs:
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Zon-APK
+        name: Zon-APK-${{ steps.date.outputs.date }}
         path: release-output/Zon-${{ steps.date.outputs.date }}.apk
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
       with:
         tag_name: build-${{ steps.date.outputs.date }}
         name: Zon Build ${{ steps.date.outputs.date }}
         body: |
           Zon File Manager - Auto Build
-          Build: ${{ steps.date.outputs.date }}
+          Build Date: ${{ steps.date.outputs.date }}
         files: release-output/Zon-${{ steps.date.outputs.date }}.apk
         draft: false
         prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
