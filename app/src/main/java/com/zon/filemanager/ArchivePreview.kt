@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// app/src/main/java/com/zon/filemanager/ArchivePreview.kt
 package com.zon.filemanager
 
 import com.github.junrar.Archive
@@ -28,7 +27,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 import org.apache.commons.io.input.BoundedInputStream
 import java.io.File
-import java.io.IOException
+import java.io.InputStream
 import java.io.RandomAccessFile
 
 data class ArchiveEntry(
@@ -96,13 +95,15 @@ object ArchivePreview {
             var index = 0
             var entry = arch.nextEntry
             while (entry != null) {
-                list.add(ArchiveEntry(
-                    name = entry.name,
-                    size = entry.size,
-                    compressedSize = entry.size,
-                    isDirectory = entry.isDirectory,
-                    index = index
-                ))
+                list.add(
+                    ArchiveEntry(
+                        name = entry.name,
+                        size = entry.size,
+                        compressedSize = entry.size,
+                        isDirectory = entry.isDirectory,
+                        index = index
+                    )
+                )
                 index++
                 entry = arch.nextEntry
             }
@@ -112,42 +113,54 @@ object ArchivePreview {
 
     private fun listRar(src: File, password: String?): List<ArchiveEntry> {
         val archive = if (password.isNullOrEmpty()) Archive(src) else Archive(src, password)
-        val list = mutableListOf<ArchiveEntry>()
-        var index = 0
-        archive.fileHeaders.forEach { header ->
-            list.add(ArchiveEntry(
-                name = header.fileName,
-                size = header.fullUnpackSize,
-                compressedSize = header.fullPackSize,
-                isDirectory = header.isDirectory,
-                index = index
-            ))
-            index++
+        archive.use { arch ->
+            val list = mutableListOf<ArchiveEntry>()
+            var index = 0
+            arch.fileHeaders.forEach { header ->
+                list.add(
+                    ArchiveEntry(
+                        name = header.fileName,
+                        size = header.fullUnpackSize,
+                        compressedSize = header.fullPackSize,
+                        isDirectory = header.isDirectory,
+                        index = index
+                    )
+                )
+                index++
+            }
+            return list
         }
-        archive.close()
-        return list
     }
 
     private fun listTar(src: File, compression: String?): List<ArchiveEntry> {
         val fileIn = src.inputStream().buffered(256 * 1024)
-        val input = when (compression) {
+        val list = mutableListOf<ArchiveEntry>()
+        var index = 0
+
+        val input: InputStream = when (compression) {
             "gz" -> GzipCompressorInputStream(fileIn)
             "bz2" -> BZip2CompressorInputStream(fileIn)
             "xz" -> XZCompressorInputStream(fileIn)
             "lz4" -> net.jpountz.lz4.LZ4FrameInputStream(fileIn)
             else -> fileIn
         }
-        val list = mutableListOf<ArchiveEntry>()
-        var index = 0
-        TarArchiveInputStream(input).use { tar ->
-            var entry = tar.nextEntry
-            while (entry != null) {
-                list.add(ArchiveEntry(
-                    name = entry.name, size = entry.size, compressedSize = entry.size,
-                    isDirectory = entry.isDirectory, index = index
-                ))
-                index++
-                entry = tar.nextEntry
+
+        input.use { wrappedStream ->
+            TarArchiveInputStream(wrappedStream).use { tar ->
+                var entry = tar.nextEntry
+                while (entry != null) {
+                    list.add(
+                        ArchiveEntry(
+                            name = entry.name,
+                            size = entry.size,
+                            compressedSize = entry.size,
+                            isDirectory = entry.isDirectory,
+                            index = index
+                        )
+                    )
+                    index++
+                    entry = tar.nextEntry
+                }
             }
         }
         return list
@@ -156,7 +169,9 @@ object ArchivePreview {
     private fun listTarMd5(src: File): List<ArchiveEntry> {
         val fileSize = src.length()
         val hasSuffix = RandomAccessFile(src, "r").use { raf ->
-            raf.seek(fileSize - 3); val tail = ByteArray(3); raf.readFully(tail)
+            raf.seek(fileSize - 3)
+            val tail = ByteArray(3)
+            raf.readFully(tail)
             String(tail, Charsets.US_ASCII) == "MD5"
         }
         val trailing = if (hasSuffix) 19L else 16L
@@ -165,15 +180,23 @@ object ArchivePreview {
         val bounded = BoundedInputStream(rawIn, tarLength)
         val list = mutableListOf<ArchiveEntry>()
         var index = 0
-        TarArchiveInputStream(bounded).use { tar ->
-            var entry = tar.nextEntry
-            while (entry != null) {
-                list.add(ArchiveEntry(
-                    name = entry.name, size = entry.size, compressedSize = entry.size,
-                    isDirectory = entry.isDirectory, index = index
-                ))
-                index++
-                entry = tar.nextEntry
+
+        bounded.use { stream ->
+            TarArchiveInputStream(stream).use { tar ->
+                var entry = tar.nextEntry
+                while (entry != null) {
+                    list.add(
+                        ArchiveEntry(
+                            name = entry.name,
+                            size = entry.size,
+                            compressedSize = entry.size,
+                            isDirectory = entry.isDirectory,
+                            index = index
+                        )
+                    )
+                    index++
+                    entry = tar.nextEntry
+                }
             }
         }
         return list
@@ -196,7 +219,9 @@ object ArchivePreview {
                 lower.endsWith(".zip") -> extractZipSingle(src, entry, outputPath, password)
                 else -> false
             }
-        } catch (e: Exception) { false }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun extractZipSingle(
