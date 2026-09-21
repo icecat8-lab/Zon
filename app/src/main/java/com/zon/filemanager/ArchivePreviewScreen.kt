@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// app/src/main/java/com/zon/filemanager/ArchivePreviewScreen.kt
 package com.zon.filemanager
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -127,7 +126,6 @@ fun ArchivePreviewScreen(viewModel: FileManagerViewModel) {
                     ArchiveEntryRow(
                         entry = entry,
                         onClick = {
-                            // แตะ entry → ถ้า previewable → เปิด preview; ถ้าไม่ → เปิด context menu
                             val ext = entry.name.substringAfterLast('.', "").lowercase()
                             val previewable = ext in listOf(
                                 "jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "svg",
