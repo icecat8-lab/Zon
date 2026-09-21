@@ -27,7 +27,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.zon.filemanager.ui.theme.ZonTheme
 
 class MainActivity : ComponentActivity() {
     private val viewModel: FileManagerViewModel by viewModels()
@@ -36,6 +35,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            // ZonTheme lives in this same package (com.zon.filemanager), so no import needed.
             ZonTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -44,11 +44,15 @@ class MainActivity : ComponentActivity() {
                     val state by viewModel.state.collectAsState()
 
                     when (state.currentScreen) {
-                        Screen.FILES -> FileManagerScreen(viewModel = viewModel)
+                        Screen.HOME, Screen.FILES -> FileManagerScreen(viewModel = viewModel)
+                        Screen.FAVORITES -> FavoritesScreen(viewModel = viewModel)
+                        Screen.RECENT -> RecentScreen(viewModel = viewModel)
                         Screen.SETTINGS -> SettingsScreen(viewModel = viewModel)
                         Screen.ABOUT -> AboutScreen(viewModel = viewModel)
+                        Screen.LICENSES -> LicensesScreen(viewModel = viewModel)
+                        Screen.PREVIEW -> PreviewScreen(viewModel = viewModel)
                         Screen.TEXT_EDITOR -> TextEditorScreen(viewModel = viewModel)
-                        else -> FileManagerScreen(viewModel = viewModel)
+                        Screen.USB_OTG -> UsbOtgScreen(viewModel = viewModel)
                     }
                 }
             }
