@@ -84,10 +84,20 @@ fun FileManagerScreen(navController: NavController) {
 
 @Composable
 fun FileRowItem(file: File, onClick: () -> Unit) {
+    var fileSizeText by remember(file.absolutePath) { mutableStateOf("") }
+
+    LaunchedEffect(file.absolutePath) {
+        if (!file.isDirectory) {
+            fileSizeText = withContext(Dispatchers.IO) {
+                "${file.length() / 1024} KB"
+            }
+        }
+    }
+
     ListItem(
         headlineContent = { Text(file.name, maxLines = 1) },
         supportingContent = { 
-            Text(if (file.isDirectory) "Folder" else "${file.length() / 1024} KB") 
+            Text(if (file.isDirectory) "Folder" else fileSizeText) 
         },
         leadingContent = {
             Icon(
