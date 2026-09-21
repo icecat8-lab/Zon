@@ -16,26 +16,30 @@
 
 package com.zon.filemanager
 
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.*
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.zon.filemanager.ui.theme.ZonTheme
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: FileManagerViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
-            MaterialTheme {
+            ZonTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -44,48 +48,63 @@ class MainActivity : ComponentActivity() {
 
                     NavHost(
                         navController = navController,
-                        startDestination = "file_manager",
-                        enterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { it },
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
-                            ) + fadeIn()
-                        },
-                        exitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { -it / 3 },
-                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                            ) + fadeOut()
-                        },
-                        popEnterTransition = {
-                            slideInHorizontally(
-                                initialOffsetX = { -it / 3 },
-                                animationSpec = spring(stiffness = Spring.StiffnessMediumLow)
-                            ) + fadeIn()
-                        },
-                        popExitTransition = {
-                            slideOutHorizontally(
-                                targetOffsetX = { it },
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
-                            ) + fadeOut()
-                        }
+                        startDestination = "file_manager"
                     ) {
                         composable("file_manager") {
-                            FileManagerScreen(navController = navController)
+                            FileManagerScreen(
+                                viewModel = viewModel,
+                                navController = navController
+                            )
                         }
-                        composable("archive_preview/{filePath}") { backStackEntry ->
-                            val filePath = backStackEntry.arguments?.getString("filePath") ?: ""
-                            ArchivePreviewScreen(filePath = filePath, navController = navController)
+
+                        composable(
+                            route = "preview?path={path}",
+                            arguments = listOf(navArgument("path") {
+                                type = NavType.StringType
+                                nullable = true
+                            })
+                        ) { backStackEntry ->
+                            val path = backStackEntry.arguments?.getString("path") ?: ""
+                            PreviewScreen(
+                                filePath = path,
+                                navController = navController
+                            )
                         }
-                        composable("text_editor/{filePath}") { backStackEntry ->
-                            val filePath = backStackEntry.arguments?.getString("filePath") ?: ""
-                            TextEditorScreen(filePath = filePath, navController = navController)
+
+                        composable(
+                            route = "archive_preview?path={path}",
+                            arguments = listOf(navArgument("path") {
+                                type = NavType.StringType
+                                nullable = true
+                            })
+                        ) { backStackEntry ->
+                            val path = backStackEntry.arguments?.getString("path") ?: ""
+                            ArchivePreviewScreen(
+                                filePath = path,
+                                navController = navController
+                            )
+                        }
+
+                        composable("settings") {
+                            SettingsScreen(navController = navController)
+                        }
+
+                        composable("about") {
+                            AboutScreen(navController = navController)
+                        }
+
+                        composable("favorites") {
+                            FavoritesScreen(
+                                viewModel = viewModel,
+                                navController = navController
+                            )
+                        }
+
+                        composable("recent") {
+                            RecentScreen(
+                                viewModel = viewModel,
+                                navController = navController
+                            )
                         }
                     }
                 }
