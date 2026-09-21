@@ -1,81 +1,84 @@
 /*
  * Copyright (C) 2026 Zon File Manager
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.zon.filemanager
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.io.File
 
-@Composable
-fun LicensesScreen(viewModel: FileManagerViewModel) {
-    BackHandler { viewModel.setScreen(Screen.ABOUT) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ZonColors.DeepBlack)
-    ) {
-        Surface(color = ZonColors.DeepBlack) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { viewModel.setScreen(Screen.ABOUT) }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = ZonColors.TextPrimary)
-                }
-                Text(
-                    "Open Source Licenses",
-                    color = ZonColors.TextPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
-            LicenseCard("Jetpack Compose", "Apache License 2.0")
-            Spacer(Modifier.height(12.dp))
-            LicenseCard("Kotlin Coroutines", "Apache License 2.0")
-            Spacer(Modifier.height(12.dp))
-            LicenseCard("Material Design 3", "Apache License 2.0")
-        }
-    }
+enum class Screen {
+    HOME,
+    FILES,
+    FAVORITES,
+    SETTINGS,
+    ABOUT,
+    LICENSES
 }
 
-@Composable
-fun LicenseCard(name: String, license: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = ZonColors.Surface,
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(name, color = ZonColors.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(4.dp))
-            Text(license, color = ZonColors.TextSecondary, fontSize = 12.sp)
+data class FileManagerState(
+    val currentScreen: Screen = Screen.HOME,
+    val favorites: List<FileItem> = emptyList(),
+    val currentPath: String = ""
+)
+
+class FileManagerViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val favoritesManager = FavoritesRecentManager(application)
+
+    private val _state = MutableStateFlow(FileManagerState())
+    val state: StateFlow<FileManagerState> = _state.asStateFlow()
+
+    init {
+        loadFavorites()
+    }
+
+    fun setScreen(screen: Screen) {
+        _state.update { it.copy(currentScreen = screen) }
+    }
+
+    fun loadFavorites() {
+        viewModelScope.launch {
+            val favs = favoritesManager.getFavorites()
+            _state.update { it.copy(favorites = favs) }
+        }
+    }
+
+    fun toggleFavorite(item: FileItem) {
+        viewModelScope.launch {
+            favoritesManager.toggleFavorite(item)
+            loadFavorites()
+        }
+    }
+
+    fun openFile(fileItem: FileItem) {
+        val context = getApplication<Application>()
+        val file = File(fileItem.path)
+        if (file.exists()) {
+            if (file.isDirectory) {
+                _state.update { it.copy(currentPath = file.absolutePath, currentScreen = Screen.HOME) }
+            } else {
+                FileOpener.openFile(context, file)
+            }
         }
     }
 }
