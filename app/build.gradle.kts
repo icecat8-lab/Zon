@@ -58,7 +58,8 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.11"
+        // แก้ไขเป็น 1.5.10 เพื่อรองรับ Kotlin 1.9.22 บน GitHub Runner
+        kotlinCompilerExtensionVersion = "1.5.10"
     }
     packaging {
         resources {
