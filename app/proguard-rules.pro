@@ -1,1 +1,9 @@
-
+-keep class com.github.junrar.** { *; }
+-keep class net.lingala.zip4j.** { *; }
+-keep class org.apache.commons.compress.** { *; }
+-keep class org.apache.commons.io.** { *; }
+-keep class net.jpountz.** { *; }
+-keep class org.tukaani.xz.** { *; }
+-keep class com.github.luben.zstd.** { *; }
+-dontwarn org.apache.commons.compress.**
+-dontwarn com.github.junrar.**
