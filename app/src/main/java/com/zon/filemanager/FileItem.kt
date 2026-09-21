@@ -1,5 +1,17 @@
 /*
  * Copyright (C) 2026 Zon File Manager
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.zon.filemanager
@@ -51,5 +63,18 @@ data class FileItem(
         val units = arrayOf("B", "KB", "MB", "GB", "TB")
         val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
         return DecimalFormat("#,##0.#").format(size / 1024.0.pow(digitGroups.toDouble())) + " " + units[digitGroups]
+    }
+
+    fun isImage(): Boolean = extension.lowercase() in IMAGE_EXTENSIONS
+
+    fun isText(): Boolean = extension.lowercase() in TEXT_EXTENSIONS
+
+    companion object {
+        private val IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic")
+        private val TEXT_EXTENSIONS = setOf(
+            "txt", "md", "json", "xml", "log", "csv", "ini", "conf", "yaml", "yml",
+            "kt", "kts", "java", "py", "js", "ts", "html", "css", "c", "cpp", "h",
+            "sh", "gradle", "properties", "toml"
+        )
     }
 }
