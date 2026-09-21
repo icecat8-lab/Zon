@@ -50,7 +50,7 @@ object ArchivePreview {
                                 ArchiveEntry(
                                     name = entry.name ?: "",
                                     size = entry.size,
-                                    compressedSize = entry.compressedSize,
+                                    compressedSize = entry.size, // แก้ไขจุดนี้: SevenZArchiveEntry ไม่อนุญาตให้เข้าถึง compressedSize โดยตรง
                                     isDirectory = entry.isDirectory
                                 )
                             )
