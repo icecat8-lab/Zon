@@ -1,38 +1,26 @@
-/*
- * Copyright (C) 2026 Zon File Manager
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-// app/build.gradle.kts
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "com.zon.filemanager"
     compileSdk = 34
+
     defaultConfig {
         applicationId = "com.zon.filemanager"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
         }
     }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -42,74 +30,66 @@ android {
                 "proguard-rules.pro"
             )
         }
-        debug {
-            isMinifyEnabled = false
-            isShrinkResources = false
-        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        isCoreLibraryDesugaringEnabled = true
     }
-    kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+    buildFeatures {
+        compose = true
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             excludes += "META-INF/DEPENDENCIES"
             excludes += "META-INF/LICENSE"
             excludes += "META-INF/LICENSE.txt"
-            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/license.txt"
             excludes += "META-INF/NOTICE"
             excludes += "META-INF/NOTICE.txt"
-            excludes += "META-INF/NOTICE.md"
-            excludes += "META-INF/INDEX.LIST"
-            excludes += "META-INF/*.kotlin_module"
+            excludes += "META-INF/notice.txt"
+            excludes += "META-INF/ASL2.0"
         }
-        jniLibs { useLegacyPackaging = false }
     }
 }
 
 dependencies {
-    // AndroidX Core
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
-    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
 
-    // Compose
-    implementation(platform("androidx.compose:compose-bom:2024.02.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.compose.material:material-icons-extended")
+    // Icons
+    implementation("androidx.compose.material:material-icons-extended:1.6.2")
 
-    // Kotlin Coroutines (สำหรับ multi-thread + limitedParallelism)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
-    // Archive Libraries
-    implementation("net.lingala.zip4j:zip4j:2.11.5")
-    implementation("org.apache.commons:commons-compress:1.26.0")
-    implementation("commons-io:commons-io:2.15.1")
-    implementation("commons-net:commons-net:3.10.0")
-    implementation("org.apache.commons:commons-lang3:3.14.0")
-    implementation("com.github.junrar:junrar:7.5.5") {
-        exclude(group = "org.slf4j")
-        exclude(group = "commons-logging")
-    }
-    implementation("org.tukaani:xz:1.9")
-    implementation("org.lz4:lz4-java:1.8.0")
-
-    // Preview
+    // Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 
-    // DocumentFile
+    // Archive / Compression Libraries
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
+    implementation("com.github.junrar:junrar:7.5.5")
+    implementation("org.apache.commons:commons-compress:1.26.0")
+    implementation("org.apache.commons:commons-io:2.15.1")
+    implementation("org.apache.commons:commons-net:3.10.0")
+    implementation("org.lz4:lz4-java:1.8.0")
+    implementation("org.tukaani:xz:1.9")
+    implementation("com.github.luben:zstd-jni:1.5.5-11@aar")
+
+    // Storage Access Framework
     implementation("androidx.documentfile:documentfile:1.0.1")
 
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
