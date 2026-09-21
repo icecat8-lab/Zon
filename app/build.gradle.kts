@@ -70,6 +70,14 @@ dependencies {
     implementation("commons-io:commons-io:2.15.1")
     implementation("org.tukaani:xz:1.9")
 
+    // Split-archive support (สำหรับ SplitArchiveManager.kt) — was missing, caused
+    // "Unresolved reference: net" across SplitArchiveManager.kt
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
+
+    // Storage Access Framework helpers (สำหรับ UsbOtgManager.kt) — was missing, caused
+    // "Unresolved reference: documentfile" / "DocumentFile"
+    implementation("androidx.documentfile:documentfile:1.0.1")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
