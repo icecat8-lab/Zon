@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// app/src/main/java/com/zon/filemanager/AboutScreen.kt
 package com.zon.filemanager
 
 import androidx.activity.compose.BackHandler
