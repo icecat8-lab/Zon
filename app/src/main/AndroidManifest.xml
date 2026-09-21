@@ -16,19 +16,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- สิทธิ์หลักสำหรับการเข้าถึงและจัดการไฟล์ทั้งหมดในเครื่อง (Android 11 / API 30 ขึ้นไป) -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+    <!-- สิทธิ์อ่าน/เขียนไฟล์แบบดั้งเดิมสำหรับ Android เวอร์ชันเก่า (Android 10 / API 29 ลงไป) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:ignore="ScopedStorage" />
+
+    <!-- สิทธิ์อ่านไฟล์มีเดียสำหรับ Android 13 ขึ้นไป (API 33+) เพื่อเข้าถึง MediaStore หากผู้ใช้ไม่อนุมัติ MANAGE_EXTERNAL_STORAGE -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
-    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -39,10 +40,11 @@
         android:requestLegacyExternalStorage="true"
         android:largeHeap="true"
         android:theme="@style/Theme.Zon">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="locale|layoutDirection"
+            android:configChanges="locale|layoutDirection|orientation|screenSize"
             android:theme="@style/Theme.Zon">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -50,6 +52,7 @@
             </intent-filter>
         </activity>
 
+        <!-- FileProvider สำหรับแชร์และเปิดไฟล์ภายนอกด้วยแอปอื่นได้อย่างปลอดภัย -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
