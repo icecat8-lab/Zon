@@ -32,7 +32,6 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 enum class Screen {
-    HOME,
     FILES,
     FAVORITES,
     RECENT,
@@ -45,7 +44,7 @@ enum class Screen {
 }
 
 data class FileManagerState(
-    val currentScreen: Screen = Screen.HOME,
+    val currentScreen: Screen = Screen.FILES,
     val currentPath: String = "",
     val favorites: List<FileItem> = emptyList(),
     val recent: List<FileItem> = emptyList(),
@@ -93,18 +92,14 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
         val storageRoot = Environment.getExternalStorageDirectory().absolutePath
         val currentPath = _state.value.currentPath
 
-        // At either "top" (device storage root or the true filesystem root "/"),
-        // there's nowhere left to climb to — go back to the storage picker instead.
-        if (currentPath == storageRoot || currentPath == "/") {
-            setScreen(Screen.HOME)
+        // Jumped to the true filesystem root "/" via the root-arrow — climbing back
+        // up from there returns to the normal device-storage view.
+        if (currentPath == "/") {
+            navigateTo(storageRoot)
             return
         }
 
-        val parent = File(currentPath).parentFile
-        if (parent == null) {
-            setScreen(Screen.HOME)
-            return
-        }
+        val parent = File(currentPath).parentFile ?: return
         _state.update { it.copy(currentPath = parent.absolutePath) }
     }
 
@@ -247,8 +242,14 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
     fun navigateUsbDirectory(uri: Uri) = loadUsbFiles(uri)
 
     fun closeUsbMode() {
+        val storageRoot = Environment.getExternalStorageDirectory().absolutePath
         _state.update {
-            it.copy(usbFiles = emptyList(), usbLoading = false, currentScreen = Screen.HOME)
+            it.copy(
+                usbFiles = emptyList(),
+                usbLoading = false,
+                currentPath = storageRoot,
+                currentScreen = Screen.FILES
+            )
         }
     }
 }

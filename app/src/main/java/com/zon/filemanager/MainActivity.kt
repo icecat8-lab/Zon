@@ -44,7 +44,6 @@ class MainActivity : ComponentActivity() {
                     val state by viewModel.state.collectAsState()
 
                     when (state.currentScreen) {
-                        Screen.HOME -> StorageHomeScreen(viewModel = viewModel)
                         Screen.FILES -> FileManagerScreen(viewModel = viewModel)
                         Screen.FAVORITES -> FavoritesScreen(viewModel = viewModel)
                         Screen.RECENT -> RecentScreen(viewModel = viewModel)

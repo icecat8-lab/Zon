@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.sp
 fun FavoritesScreen(viewModel: FileManagerViewModel) {
     val state by viewModel.state.collectAsState()
 
-    BackHandler(enabled = true) { viewModel.setScreen(Screen.HOME) }
+    BackHandler(enabled = true) { viewModel.setScreen(Screen.FILES) }
 
     Column(
         modifier = Modifier
@@ -59,7 +59,7 @@ fun FavoritesScreen(viewModel: FileManagerViewModel) {
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { viewModel.setScreen(Screen.HOME) }) {
+                IconButton(onClick = { viewModel.setScreen(Screen.FILES) }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = ZonColors.TextPrimary)
                 }
                 Text(
