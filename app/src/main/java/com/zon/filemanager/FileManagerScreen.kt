@@ -16,8 +16,14 @@
 
 package com.zon.filemanager
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Environment
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,6 +41,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,12 +55,43 @@ import java.io.File
 @Composable
 fun FileManagerScreen(viewModel: FileManagerViewModel) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
     val rootPath = remember { Environment.getExternalStorageDirectory().absolutePath }
     var fileList by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(state.currentPath) {
+    // "All files access" (MANAGE_EXTERNAL_STORAGE) is declared in the manifest but Android
+    // never grants it automatically on API 30+ — the user has to flip it on in Settings.
+    // Without it, File.listFiles() on real folders like Documents/Download comes back
+    // empty or missing items, which is why the list looked incomplete.
+    var hasPermission by remember { mutableStateOf(PermissionHelper.hasAllFilesAccess(context)) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        hasPermission = PermissionHelper.hasAllFilesAccess(context)
+    }
+
+    fun requestAllFilesAccess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                }
+                permissionLauncher.launch(intent)
+            } catch (e: Exception) {
+                permissionLauncher.launch(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+            }
+        }
+    }
+
+    LaunchedEffect(state.currentPath, hasPermission) {
+        if (!hasPermission) {
+            fileList = emptyList()
+            isLoading = false
+            return@LaunchedEffect
+        }
         isLoading = true
         fileList = withContext(Dispatchers.IO) {
             val dir = File(state.currentPath)
@@ -98,7 +136,11 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                     Spacer(Modifier.width(48.dp))
                 }
                 Text(
-                    text = File(state.currentPath).name.ifEmpty { stringResource(R.string.internal_storage) },
+                    text = if (state.currentPath == rootPath) {
+                        stringResource(R.string.internal_storage)
+                    } else {
+                        File(state.currentPath).name
+                    },
                     color = ZonColors.TextPrimary,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -124,6 +166,48 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                 .weight(1f)
         ) {
             when {
+                !hasPermission -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(horizontal = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .background(ZonColors.Surface, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.Lock,
+                                null,
+                                tint = ZonColors.TextTertiary,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(20.dp))
+                        Text(
+                            "ต้องขอสิทธิ์เข้าถึงไฟล์ทั้งหมดก่อน",
+                            color = ZonColors.TextSecondary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "ถ้าไม่เปิดสิทธิ์นี้ แอปจะเห็นไฟล์ในเครื่องไม่ครบ",
+                            color = ZonColors.TextTertiary,
+                            fontSize = 12.sp
+                        )
+                        Spacer(Modifier.height(20.dp))
+                        Button(
+                            onClick = { requestAllFilesAccess() },
+                            colors = ButtonDefaults.buttonColors(containerColor = ZonColors.Accent)
+                        ) {
+                            Text("อนุญาตการเข้าถึงไฟล์ทั้งหมด")
+                        }
+                    }
+                }
                 isLoading -> {
                     CircularProgressIndicator(
                         color = ZonColors.Accent,
