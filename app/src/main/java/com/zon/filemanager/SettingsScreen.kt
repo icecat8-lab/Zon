@@ -109,46 +109,6 @@ fun SettingsScreen(viewModel: FileManagerViewModel) {
 
             Spacer(Modifier.height(16.dp))
 
-            SettingsSection(stringResource(R.string.menu_app_manager)) {
-                SettingsItem(
-                    icon = Icons.Outlined.Apps,
-                    title = stringResource(R.string.menu_app_manager),
-                    subtitle = "จัดการแอปที่ติดตั้ง",
-                    tint = ZonColors.IconApk,
-                    onClick = { viewModel.openAppManager() }
-                )
-                SettingsItem(
-                    icon = Icons.Outlined.PieChart,
-                    title = stringResource(R.string.menu_storage_analyzer),
-                    subtitle = "ดูการใช้งานพื้นที่",
-                    tint = ZonColors.IconImage,
-                    onClick = { viewModel.openStorageAnalyzer() }
-                )
-                SettingsItem(
-                    icon = Icons.Outlined.ContentCopy,
-                    title = stringResource(R.string.menu_duplicate_finder),
-                    subtitle = "ค้นหาไฟล์ซ้ำ",
-                    tint = ZonColors.IconCode,
-                    onClick = { viewModel.openDuplicateFinder() }
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            SettingsSection("เครือข่าย") {
-                SettingsItem(
-                    icon = Icons.Outlined.Dns,
-                    title = "FTP Client",
-                    subtitle = if (state.ftpState.connected)
-                        "เชื่อมต่อ: ${state.ftpState.host}"
-                    else "เชื่อมต่อ FTP Server",
-                    tint = ZonColors.Accent,
-                    onClick = { viewModel.openFtp() }
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
             SettingsSection(stringResource(R.string.settings_about)) {
                 SettingsItem(
                     icon = Icons.Outlined.Info,

@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.*
@@ -111,7 +112,7 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
         isLoading = false
     }
 
-    BackHandler(enabled = state.currentPath != rootPath) {
+    BackHandler {
         viewModel.navigateUp()
     }
 
@@ -128,18 +129,14 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (state.currentPath != rootPath) {
-                    IconButton(onClick = { viewModel.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = ZonColors.TextPrimary)
-                    }
-                } else {
-                    Spacer(Modifier.width(48.dp))
+                IconButton(onClick = { viewModel.navigateUp() }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = ZonColors.TextPrimary)
                 }
                 Text(
-                    text = if (state.currentPath == rootPath) {
-                        stringResource(R.string.internal_storage)
-                    } else {
-                        File(state.currentPath).name
+                    text = when (state.currentPath) {
+                        "/" -> "/"
+                        rootPath -> stringResource(R.string.internal_storage)
+                        else -> File(state.currentPath).name
                     },
                     color = ZonColors.TextPrimary,
                     fontSize = 17.sp,
@@ -148,6 +145,11 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
+                if (state.currentPath != "/") {
+                    IconButton(onClick = { viewModel.navigateToRoot() }) {
+                        Icon(Icons.Filled.ArrowDropDown, "ไปที่ราก /", tint = ZonColors.TextPrimary)
+                    }
+                }
                 IconButton(onClick = { viewModel.openRecent() }) {
                     Icon(Icons.Outlined.History, null, tint = ZonColors.TextPrimary)
                 }

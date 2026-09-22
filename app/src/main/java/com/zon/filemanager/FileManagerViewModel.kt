@@ -17,8 +17,10 @@
 package com.zon.filemanager
 
 import android.app.Application
+import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import android.os.storage.StorageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -42,11 +44,6 @@ enum class Screen {
     USB_OTG
 }
 
-data class FtpState(
-    val connected: Boolean = false,
-    val host: String = ""
-)
-
 data class FileManagerState(
     val currentScreen: Screen = Screen.HOME,
     val currentPath: String = "",
@@ -54,11 +51,11 @@ data class FileManagerState(
     val recent: List<FileItem> = emptyList(),
     val rootAvailable: Boolean = false,
     val rootEnabled: Boolean = false,
-    val ftpState: FtpState = FtpState(),
     val previewItem: FileItem? = null,
     val textEditorItem: FileItem? = null,
     val usbFiles: List<FileItem> = emptyList(),
-    val usbLoading: Boolean = false
+    val usbLoading: Boolean = false,
+    val usbAvailable: Boolean = false
 )
 
 class FileManagerViewModel(application: Application) : AndroidViewModel(application) {
@@ -75,6 +72,7 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
         loadFavorites()
         loadRecent()
         recheckRoot()
+        refreshUsbAvailability()
     }
 
     // ==================== Navigation ====================
@@ -83,15 +81,30 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
         _state.update { it.copy(currentScreen = screen) }
     }
 
-    private fun navigateTo(path: String) {
+    fun navigateTo(path: String) {
         _state.update { it.copy(currentPath = path, currentScreen = Screen.FILES) }
     }
 
+    fun navigateToRoot() {
+        navigateTo("/")
+    }
+
     fun navigateUp() {
-        val rootPath = Environment.getExternalStorageDirectory().absolutePath
+        val storageRoot = Environment.getExternalStorageDirectory().absolutePath
         val currentPath = _state.value.currentPath
-        if (currentPath == rootPath) return
-        val parent = File(currentPath).parentFile ?: return
+
+        // At either "top" (device storage root or the true filesystem root "/"),
+        // there's nowhere left to climb to — go back to the storage picker instead.
+        if (currentPath == storageRoot || currentPath == "/") {
+            setScreen(Screen.HOME)
+            return
+        }
+
+        val parent = File(currentPath).parentFile
+        if (parent == null) {
+            setScreen(Screen.HOME)
+            return
+        }
         _state.update { it.copy(currentPath = parent.absolutePath) }
     }
 
@@ -208,16 +221,20 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
         return suPaths.any { File(it).exists() }
     }
 
-    // ==================== Sections not built yet ====================
-    // These have no dedicated screen/state yet, kept as safe no-ops so
-    // SettingsScreen compiles and remains clickable without crashing.
-
-    fun openAppManager() { /* TODO: App manager screen not implemented yet */ }
-    fun openStorageAnalyzer() { /* TODO: Storage analyzer screen not implemented yet */ }
-    fun openDuplicateFinder() { /* TODO: Duplicate finder screen not implemented yet */ }
-    fun openFtp() { /* TODO: FTP client screen not implemented yet */ }
-
     // ==================== USB OTG ====================
+
+    fun refreshUsbAvailability() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val available = try {
+                val sm = getApplication<Application>()
+                    .getSystemService(Context.STORAGE_SERVICE) as StorageManager
+                sm.storageVolumes.any { !it.isPrimary }
+            } catch (e: Exception) {
+                false
+            }
+            _state.update { it.copy(usbAvailable = available) }
+        }
+    }
 
     fun loadUsbFiles(uri: Uri) {
         _state.update { it.copy(usbLoading = true, currentScreen = Screen.USB_OTG) }
@@ -231,7 +248,7 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun closeUsbMode() {
         _state.update {
-            it.copy(usbFiles = emptyList(), usbLoading = false, currentScreen = Screen.FILES)
+            it.copy(usbFiles = emptyList(), usbLoading = false, currentScreen = Screen.HOME)
         }
     }
 }
