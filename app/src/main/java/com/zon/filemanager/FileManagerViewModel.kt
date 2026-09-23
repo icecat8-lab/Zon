@@ -36,7 +36,6 @@ enum class Screen {
     RECENT,
     SETTINGS,
     ABOUT,
-    LICENSES,
     PREVIEW,
     TEXT_EDITOR,
     USB_OTG

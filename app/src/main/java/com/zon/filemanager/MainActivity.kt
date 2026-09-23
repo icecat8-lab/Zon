@@ -48,7 +48,6 @@ class MainActivity : ComponentActivity() {
                         Screen.RECENT -> RecentScreen(viewModel = viewModel)
                         Screen.SETTINGS -> SettingsScreen(viewModel = viewModel)
                         Screen.ABOUT -> AboutScreen(viewModel = viewModel)
-                        Screen.LICENSES -> LicensesScreen(viewModel = viewModel)
                         Screen.PREVIEW -> PreviewScreen(viewModel = viewModel)
                         Screen.TEXT_EDITOR -> TextEditorScreen(viewModel = viewModel)
                         Screen.USB_OTG -> UsbOtgScreen(viewModel = viewModel)

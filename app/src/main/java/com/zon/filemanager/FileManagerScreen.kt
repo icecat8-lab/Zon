@@ -20,7 +20,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.os.StatFs
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -67,9 +66,6 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
     var fileList by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    var totalBytes by remember { mutableStateOf(0L) }
-    var usedBytes by remember { mutableStateOf(0L) }
-
     // "All files access" (MANAGE_EXTERNAL_STORAGE) is declared in the manifest but Android
     // never grants it automatically on API 30+ — the user has to flip it on in Settings.
     // Without it, File.listFiles() on real folders like Documents/Download comes back
@@ -114,13 +110,6 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
     LaunchedEffect(atRoot) {
         if (atRoot) {
             viewModel.refreshUsbAvailability()
-            try {
-                val stat = StatFs(rootPath)
-                totalBytes = stat.totalBytes
-                usedBytes = totalBytes - stat.availableBytes
-            } catch (e: Exception) {
-                // leave at 0, the usage bar just won't be shown
-            }
         }
     }
 
@@ -227,18 +216,7 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         if (atRoot) {
-                            item {
-                                StorageCard(
-                                    icon = Icons.Outlined.PhoneAndroid,
-                                    title = stringResource(R.string.internal_storage),
-                                    subtitle = rootPath,
-                                    usedBytes = usedBytes,
-                                    totalBytes = totalBytes,
-                                    onClick = {}
-                                )
-                            }
                             if (state.usbAvailable) {
-                                item { Spacer(Modifier.height(8.dp)) }
                                 item {
                                     StorageCard(
                                         icon = Icons.Outlined.Usb,
@@ -249,8 +227,8 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                                         onClick = { usbPickerLauncher.launch(null) }
                                     )
                                 }
+                                item { Spacer(Modifier.height(8.dp)) }
                             }
-                            item { Spacer(Modifier.height(8.dp)) }
                             item {
                                 ShortcutRow(Icons.Outlined.Download, "ดาวน์โหลด") {
                                     viewModel.navigateTo("$rootPath/Download")

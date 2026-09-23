@@ -148,12 +148,6 @@ fun AboutScreen(viewModel: FileManagerViewModel) {
                     tint = ZonColors.Accent
                 )
                 AboutItem(
-                    icon = Icons.Outlined.Code,
-                    title = "ภาษา",
-                    value = "Kotlin + Jetpack Compose",
-                    tint = ZonColors.IconCode
-                )
-                AboutItem(
                     icon = Icons.Outlined.Email,
                     title = "อีเมล",
                     value = "contact@zonfile.app",
@@ -169,13 +163,6 @@ fun AboutScreen(viewModel: FileManagerViewModel) {
                     title = "License",
                     value = "Apache 2.0",
                     tint = ZonColors.Warning
-                )
-                AboutItem(
-                    icon = Icons.Outlined.Article,
-                    title = "Open Source Licenses",
-                    value = "ดูรายการทั้งหมด",
-                    tint = ZonColors.Accent,
-                    onClick = { viewModel.setScreen(Screen.LICENSES) }
                 )
             }
 
