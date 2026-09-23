@@ -36,7 +36,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -197,9 +196,6 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                 IconButton(onClick = { viewModel.openRecent() }) {
                     Icon(Icons.Outlined.History, null, tint = ZonColors.TextPrimary)
                 }
-                IconButton(onClick = { viewModel.openFavorites() }) {
-                    Icon(Icons.Outlined.Star, null, tint = ZonColors.TextPrimary)
-                }
                 IconButton(onClick = { viewModel.setScreen(Screen.SETTINGS) }) {
                     Icon(Icons.Outlined.Settings, null, tint = ZonColors.TextPrimary)
                 }
@@ -276,9 +272,7 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                         items(fileList, key = { it.path }) { file ->
                             FileManagerRow(
                                 file = file,
-                                isFavorite = state.favorites.any { it.path == file.path },
-                                onClick = { viewModel.openFile(file) },
-                                onToggleFavorite = { viewModel.toggleFavorite(file) }
+                                onClick = { viewModel.openFile(file) }
                             )
                         }
                     }
@@ -446,9 +440,7 @@ private fun formatBytes(bytes: Long): String {
 @Composable
 fun FileManagerRow(
     file: FileItem,
-    isFavorite: Boolean,
-    onClick: () -> Unit,
-    onToggleFavorite: () -> Unit
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -482,14 +474,6 @@ fun FileManagerRow(
                 if (file.isDirectory) "โฟลเดอร์" else file.getReadableSize(),
                 color = ZonColors.TextTertiary,
                 fontSize = 11.sp
-            )
-        }
-        IconButton(onClick = onToggleFavorite) {
-            Icon(
-                if (isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
-                contentDescription = null,
-                tint = if (isFavorite) ZonColors.Warning else ZonColors.TextTertiary,
-                modifier = Modifier.size(18.dp)
             )
         }
         if (file.isDirectory) {

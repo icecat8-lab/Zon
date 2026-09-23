@@ -45,7 +45,6 @@ class MainActivity : ComponentActivity() {
 
                     when (state.currentScreen) {
                         Screen.FILES -> FileManagerScreen(viewModel = viewModel)
-                        Screen.FAVORITES -> FavoritesScreen(viewModel = viewModel)
                         Screen.RECENT -> RecentScreen(viewModel = viewModel)
                         Screen.SETTINGS -> SettingsScreen(viewModel = viewModel)
                         Screen.ABOUT -> AboutScreen(viewModel = viewModel)

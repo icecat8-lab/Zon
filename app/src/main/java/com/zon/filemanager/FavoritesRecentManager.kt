@@ -26,35 +26,6 @@ class FavoritesRecentManager(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("zon_prefs", Context.MODE_PRIVATE)
 
-    // ==================== Favorites ====================
-    fun getFavorites(): List<FileItem> {
-        val raw = prefs.getString(KEY_FAVORITES, "[]") ?: "[]"
-        return parseItems(raw)
-    }
-
-    fun addFavorite(item: FileItem) {
-        val list = getFavorites().filter { it.path != item.path }.toMutableList()
-        list.add(0, item)
-        saveItems(KEY_FAVORITES, list)
-    }
-
-    fun removeFavorite(path: String) {
-        val list = getFavorites().filter { it.path != path }
-        saveItems(KEY_FAVORITES, list)
-    }
-
-    fun isFavorite(path: String): Boolean = getFavorites().any { it.path == path }
-
-    fun toggleFavorite(item: FileItem): Boolean {
-        return if (isFavorite(item.path)) {
-            removeFavorite(item.path)
-            false
-        } else {
-            addFavorite(item)
-            true
-        }
-    }
-
     // ==================== Recent ====================
     fun getRecent(): List<FileItem> {
         val raw = prefs.getString(KEY_RECENT, "[]") ?: "[]"
@@ -110,65 +81,8 @@ class FavoritesRecentManager(context: Context) {
         prefs.edit().putString(key, arr.toString()).apply()
     }
 
-    // ==================== FTP History ====================
-    fun getFtpServers(): List<FtpServer> {
-        val raw = prefs.getString(KEY_FTP, "[]") ?: "[]"
-        return try {
-            val arr = JSONArray(raw)
-            (0 until arr.length()).mapNotNull { i ->
-                val o = arr.optJSONObject(i) ?: return@mapNotNull null
-                FtpServer(
-                    host = o.optString("host", ""),
-                    port = o.optInt("port", 21),
-                    user = o.optString("user", "anonymous"),
-                    password = o.optString("password", ""),
-                    name = o.optString("name", "")
-                )
-            }
-        } catch (e: Exception) { emptyList() }
-    }
-
-    fun saveFtpServer(server: FtpServer) {
-        val list = getFtpServers().filter { it.host != server.host || it.port != server.port }.toMutableList()
-        list.add(0, server)
-        while (list.size > MAX_FTP) list.removeAt(list.size - 1)
-        val arr = JSONArray()
-        list.forEach { s ->
-            val o = JSONObject()
-            o.put("host", s.host); o.put("port", s.port)
-            o.put("user", s.user); o.put("password", s.password)
-            o.put("name", s.name)
-            arr.put(o)
-        }
-        prefs.edit().putString(KEY_FTP, arr.toString()).apply()
-    }
-
-    fun removeFtpServer(host: String, port: Int) {
-        val list = getFtpServers().filter { !(it.host == host && it.port == port) }
-        val arr = JSONArray()
-        list.forEach { s ->
-            val o = JSONObject()
-            o.put("host", s.host); o.put("port", s.port)
-            o.put("user", s.user); o.put("password", s.password)
-            o.put("name", s.name)
-            arr.put(o)
-        }
-        prefs.edit().putString(KEY_FTP, arr.toString()).apply()
-    }
-
     companion object {
-        private const val KEY_FAVORITES = "favorites"
         private const val KEY_RECENT = "recent"
-        private const val KEY_FTP = "ftp_servers"
         private const val MAX_RECENT = 50
-        private const val MAX_FTP = 20
     }
 }
-
-data class FtpServer(
-    val host: String,
-    val port: Int = 21,
-    val user: String = "anonymous",
-    val password: String = "",
-    val name: String = ""
-)

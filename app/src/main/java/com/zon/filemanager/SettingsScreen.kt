@@ -92,13 +92,6 @@ fun SettingsScreen(viewModel: FileManagerViewModel) {
 
             SettingsSection("เครื่องมือ") {
                 SettingsItem(
-                    icon = Icons.Outlined.Star,
-                    title = "รายการโปรด",
-                    subtitle = "${state.favorites.size} รายการ",
-                    tint = ZonColors.Warning,
-                    onClick = { viewModel.openFavorites() }
-                )
-                SettingsItem(
                     icon = Icons.Outlined.History,
                     title = "เปิดล่าสุด",
                     subtitle = "${state.recent.size} รายการ",

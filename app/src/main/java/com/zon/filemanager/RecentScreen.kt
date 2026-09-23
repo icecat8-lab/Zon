@@ -148,3 +148,50 @@ fun RecentScreen(viewModel: FileManagerViewModel) {
         )
     }
 }
+
+@Composable
+fun ListItemRow(file: FileItem, onClick: () -> Unit, onRemove: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(file.getIconColor().copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(file.getIcon(), null, tint = file.getIconColor(), modifier = Modifier.size(22.dp))
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                file.name,
+                color = ZonColors.TextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                file.path.substringBeforeLast('/'),
+                color = ZonColors.TextTertiary,
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        IconButton(onClick = onRemove) {
+            Icon(Icons.Outlined.Close, null, tint = ZonColors.TextTertiary, modifier = Modifier.size(18.dp))
+        }
+        if (file.isDirectory) {
+            Icon(Icons.Filled.ChevronRight, null, tint = ZonColors.TextTertiary, modifier = Modifier.size(18.dp))
+        }
+    }
+}

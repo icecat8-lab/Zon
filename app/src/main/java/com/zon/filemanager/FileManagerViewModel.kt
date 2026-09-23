@@ -33,7 +33,6 @@ import java.io.File
 
 enum class Screen {
     FILES,
-    FAVORITES,
     RECENT,
     SETTINGS,
     ABOUT,
@@ -46,7 +45,6 @@ enum class Screen {
 data class FileManagerState(
     val currentScreen: Screen = Screen.FILES,
     val currentPath: String = "",
-    val favorites: List<FileItem> = emptyList(),
     val recent: List<FileItem> = emptyList(),
     val rootAvailable: Boolean = false,
     val rootEnabled: Boolean = false,
@@ -68,7 +66,6 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
     val state: StateFlow<FileManagerState> = _state.asStateFlow()
 
     init {
-        loadFavorites()
         loadRecent()
         recheckRoot()
         refreshUsbAvailability()
@@ -101,26 +98,6 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
 
         val parent = File(currentPath).parentFile ?: return
         _state.update { it.copy(currentPath = parent.absolutePath) }
-    }
-
-    // ==================== Favorites ====================
-
-    fun loadFavorites() {
-        viewModelScope.launch {
-            val favs = favoritesManager.getFavorites()
-            _state.update { it.copy(favorites = favs) }
-        }
-    }
-
-    fun toggleFavorite(item: FileItem) {
-        viewModelScope.launch {
-            favoritesManager.toggleFavorite(item)
-            loadFavorites()
-        }
-    }
-
-    fun openFavorites() {
-        setScreen(Screen.FAVORITES)
     }
 
     // ==================== Recent ====================
