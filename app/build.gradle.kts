@@ -74,6 +74,10 @@ dependencies {
     // "Unresolved reference: net" across SplitArchiveManager.kt
     implementation("net.lingala.zip4j:zip4j:2.11.5")
 
+    // RAR / CBR extraction (สำหรับ ArchiveEngine.kt) — RAR can only be read, never
+    // created, since the compression format is proprietary to RARLab/WinRAR
+    implementation("com.github.junrar:junrar:7.5.5")
+
     // Storage Access Framework helpers (สำหรับ UsbOtgManager.kt) — was missing, caused
     // "Unresolved reference: documentfile" / "DocumentFile"
     implementation("androidx.documentfile:documentfile:1.0.1")
