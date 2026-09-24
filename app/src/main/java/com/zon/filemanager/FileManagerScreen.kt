@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -144,6 +145,14 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
         viewModel.navigateUp()
     }
 
+    var viewingArchive by remember { mutableStateOf<File?>(null) }
+
+    if (viewingArchive != null) {
+        ArchivePreviewScreen(file = viewingArchive!!, onBack = { viewingArchive = null })
+        return
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -256,6 +265,113 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                     }
                 }
             }
+        }
+    }
+
+        state.archiveMenuTarget?.let { target ->
+            ArchiveMenuSheet(
+                fileName = target.name,
+                onDismiss = { viewModel.dismissArchiveMenu() },
+                onView = {
+                    viewModel.dismissArchiveMenu()
+                    viewingArchive = File(target.path)
+                },
+                onExtractHere = { viewModel.extractHere(target) },
+                onExtractToSubfolder = { viewModel.extractToSubfolder(target) }
+            )
+        }
+
+        if (state.archiveOpRunning) {
+            ArchiveProgressDialog(
+                label = state.archiveOpLabel,
+                fileName = state.archiveOpFile,
+                onCancel = { viewModel.cancelArchiveOperation() }
+            )
+        }
+
+        state.archiveOpError?.let { message ->
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissArchiveError() },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.dismissArchiveError() }) { Text("ตกลง") }
+                },
+                title = { Text("แตกไฟล์ไม่สำเร็จ") },
+                text = { Text(message) }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ArchiveMenuSheet(
+    fileName: String,
+    onDismiss: () -> Unit,
+    onView: () -> Unit,
+    onExtractHere: () -> Unit,
+    onExtractToSubfolder: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = ZonColors.Surface) {
+        Column(modifier = Modifier.padding(bottom = 24.dp)) {
+            Text(
+                fileName,
+                color = ZonColors.TextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            )
+            HorizontalDivider(color = ZonColors.DeepBlack)
+            ArchiveMenuRow(Icons.Outlined.Visibility, "ดู") { onDismiss(); onView() }
+            ArchiveMenuRow(Icons.Outlined.FileUpload, "แยกไฟล์ไว้ที่นี่") { onExtractHere() }
+            ArchiveMenuRow(Icons.Outlined.CreateNewFolder, "แยกไฟล์ไว้ที่ ./${fileName.substringBeforeLast('.')}/") {
+                onExtractToSubfolder()
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArchiveMenuRow(icon: ImageVector, title: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = ZonColors.TextSecondary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(18.dp))
+        Text(title, color = ZonColors.TextPrimary, fontSize = 14.sp)
+    }
+}
+
+@Composable
+private fun ArchiveProgressDialog(label: String, fileName: String, onCancel: () -> Unit) {
+    Dialog(onDismissRequest = {}) {
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(ZonColors.Surface)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator(color = ZonColors.Accent)
+            Spacer(Modifier.height(16.dp))
+            Text(label, color = ZonColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            if (fileName.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    fileName,
+                    color = ZonColors.TextTertiary,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            TextButton(onClick = onCancel) { Text("ยกเลิก") }
         }
     }
 }

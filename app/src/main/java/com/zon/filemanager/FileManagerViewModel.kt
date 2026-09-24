@@ -23,7 +23,9 @@ import android.os.Environment
 import android.os.storage.StorageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,13 +53,19 @@ data class FileManagerState(
     val textEditorItem: FileItem? = null,
     val usbFiles: List<FileItem> = emptyList(),
     val usbLoading: Boolean = false,
-    val usbAvailable: Boolean = false
+    val usbAvailable: Boolean = false,
+    val archiveMenuTarget: FileItem? = null,
+    val archiveOpRunning: Boolean = false,
+    val archiveOpLabel: String = "",
+    val archiveOpFile: String = "",
+    val archiveOpError: String? = null
 )
 
 class FileManagerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val favoritesManager = FavoritesRecentManager(application)
     private val usbOtgManager = UsbOtgManager(application)
+    private var archiveJob: Job? = null
 
     private val _state = MutableStateFlow(
         FileManagerState(currentPath = Environment.getExternalStorageDirectory().absolutePath)
@@ -147,6 +155,9 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
             fileItem.isImage() -> {
                 _state.update { it.copy(previewItem = fileItem, currentScreen = Screen.PREVIEW) }
             }
+            ArchiveEngine.isArchive(file) -> {
+                _state.update { it.copy(archiveMenuTarget = fileItem) }
+            }
             fileItem.isText() -> {
                 _state.update { it.copy(textEditorItem = fileItem, currentScreen = Screen.TEXT_EDITOR) }
             }
@@ -157,6 +168,72 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun openFromList(fileItem: FileItem) = openFile(fileItem)
+
+    // ==================== Archive engine ====================
+
+    fun dismissArchiveMenu() {
+        _state.update { it.copy(archiveMenuTarget = null) }
+    }
+
+    fun dismissArchiveError() {
+        _state.update { it.copy(archiveOpError = null) }
+    }
+
+    fun cancelArchiveOperation() {
+        archiveJob?.cancel()
+    }
+
+    /** Extract into the same folder the archive is already in. */
+    fun extractHere(fileItem: FileItem) {
+        val archive = File(fileItem.path)
+        runArchiveExtract(archive, archive.parentFile ?: return)
+    }
+
+    /** Extract into a new subfolder named after the archive, next to it. */
+    fun extractToSubfolder(fileItem: FileItem) {
+        val archive = File(fileItem.path)
+        val parent = archive.parentFile ?: return
+        val folderName = archive.name.substringBeforeLast('.').ifBlank { archive.name }
+        runArchiveExtract(archive, File(parent, folderName))
+    }
+
+    private fun runArchiveExtract(archive: File, destDir: File) {
+        _state.update {
+            it.copy(
+                archiveMenuTarget = null,
+                archiveOpRunning = true,
+                archiveOpLabel = "กำลังแตกไฟล์ ${archive.name}",
+                archiveOpFile = "",
+                archiveOpError = null
+            )
+        }
+        archiveJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                ArchiveEngine.extract(archive, destDir) { entryName ->
+                    _state.update { it.copy(archiveOpFile = entryName) }
+                }
+                _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "") }
+                if (_state.value.currentPath == destDir.parentFile?.absolutePath ||
+                    _state.value.currentPath == destDir.absolutePath
+                ) {
+                    // trigger a refresh of the currently visible folder
+                    val path = _state.value.currentPath
+                    _state.update { it.copy(currentPath = "") }
+                    _state.update { it.copy(currentPath = path) }
+                }
+            } catch (e: CancellationException) {
+                _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "") }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        archiveOpRunning = false,
+                        archiveOpFile = "",
+                        archiveOpError = e.message ?: "แตกไฟล์ไม่สำเร็จ"
+                    )
+                }
+            }
+        }
+    }
 
     // ==================== Text editor ====================
 
