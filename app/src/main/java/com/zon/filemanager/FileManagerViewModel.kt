@@ -43,6 +43,10 @@ enum class Screen {
     USB_OTG
 }
 
+enum class ClipboardMode { COPY, MOVE }
+
+data class FileClipboard(val items: List<FileItem>, val mode: ClipboardMode)
+
 data class FileManagerState(
     val currentScreen: Screen = Screen.FILES,
     val currentPath: String = "",
@@ -58,7 +62,14 @@ data class FileManagerState(
     val archiveOpRunning: Boolean = false,
     val archiveOpLabel: String = "",
     val archiveOpFile: String = "",
-    val archiveOpError: String? = null
+    val archiveOpPercent: Int = 0,
+    val archiveOpError: String? = null,
+    val contextMenuTarget: FileItem? = null,
+    val clipboard: FileClipboard? = null,
+    val renameTarget: FileItem? = null,
+    val deleteConfirmTarget: FileItem? = null,
+    val infoTarget: FileItem? = null,
+    val isRefreshing: Boolean = false
 )
 
 class FileManagerViewModel(application: Application) : AndroidViewModel(application) {
@@ -105,6 +116,17 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
 
         val parent = File(currentPath).parentFile ?: return
         _state.update { it.copy(currentPath = parent.absolutePath) }
+    }
+
+    /** Re-triggers the folder listing for whatever path is currently visible. */
+    fun refreshCurrentFolder() {
+        viewModelScope.launch {
+            _state.update { it.copy(isRefreshing = true) }
+            val path = _state.value.currentPath
+            _state.update { it.copy(currentPath = "") }
+            _state.update { it.copy(currentPath = path) }
+            _state.update { it.copy(isRefreshing = false) }
+        }
     }
 
     // ==================== Recent ====================
@@ -169,7 +191,152 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun openFromList(fileItem: FileItem) = openFile(fileItem)
 
-    // ==================== Archive engine ====================
+    // ==================== Long-press context menu ====================
+
+    fun showContextMenu(item: FileItem) {
+        _state.update { it.copy(contextMenuTarget = item) }
+    }
+
+    fun dismissContextMenu() {
+        _state.update { it.copy(contextMenuTarget = null) }
+    }
+
+    fun startCopy(item: FileItem) {
+        _state.update { it.copy(clipboard = FileClipboard(listOf(item), ClipboardMode.COPY), contextMenuTarget = null) }
+    }
+
+    fun startMove(item: FileItem) {
+        _state.update { it.copy(clipboard = FileClipboard(listOf(item), ClipboardMode.MOVE), contextMenuTarget = null) }
+    }
+
+    fun cancelClipboard() {
+        _state.update { it.copy(clipboard = null) }
+    }
+
+    fun pasteClipboard() {
+        val clip = _state.value.clipboard ?: return
+        val destDir = File(_state.value.currentPath)
+        _state.update {
+            it.copy(
+                clipboard = null,
+                archiveOpRunning = true,
+                archiveOpLabel = if (clip.mode == ClipboardMode.MOVE) "กำลังย้ายไฟล์" else "กำลังคัดลอกไฟล์",
+                archiveOpFile = "",
+                archiveOpPercent = 0,
+                archiveOpError = null
+            )
+        }
+        archiveJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                for (item in clip.items) {
+                    val source = File(item.path)
+                    if (clip.mode == ClipboardMode.MOVE) {
+                        FileOperations.move(source, destDir) { name -> _state.update { it.copy(archiveOpFile = name) } }
+                    } else {
+                        FileOperations.copy(source, destDir) { name -> _state.update { it.copy(archiveOpFile = name) } }
+                    }
+                }
+                _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "", archiveOpPercent = 100) }
+                refreshCurrentFolder()
+            } catch (e: CancellationException) {
+                _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "") }
+                refreshCurrentFolder()
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(archiveOpRunning = false, archiveOpFile = "", archiveOpError = e.message ?: "ทำรายการไม่สำเร็จ")
+                }
+            }
+        }
+    }
+
+    fun requestRename(item: FileItem) {
+        _state.update { it.copy(renameTarget = item, contextMenuTarget = null) }
+    }
+
+    fun dismissRename() {
+        _state.update { it.copy(renameTarget = null) }
+    }
+
+    fun confirmRename(newName: String) {
+        val target = _state.value.renameTarget ?: return
+        try {
+            FileOperations.rename(File(target.path), newName)
+            _state.update { it.copy(renameTarget = null) }
+            refreshCurrentFolder()
+        } catch (e: Exception) {
+            _state.update { it.copy(archiveOpError = e.message ?: "เปลี่ยนชื่อไม่สำเร็จ") }
+        }
+    }
+
+    fun requestDelete(item: FileItem) {
+        _state.update { it.copy(deleteConfirmTarget = item, contextMenuTarget = null) }
+    }
+
+    fun dismissDeleteConfirm() {
+        _state.update { it.copy(deleteConfirmTarget = null) }
+    }
+
+    fun confirmDelete() {
+        val target = _state.value.deleteConfirmTarget ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            FileOperations.deleteRecursive(File(target.path))
+            _state.update { it.copy(deleteConfirmTarget = null) }
+            refreshCurrentFolder()
+        }
+    }
+
+    fun showInfo(item: FileItem) {
+        _state.update { it.copy(infoTarget = item, contextMenuTarget = null) }
+    }
+
+    fun dismissInfo() {
+        _state.update { it.copy(infoTarget = null) }
+    }
+
+    fun shareItem(item: FileItem) {
+        _state.update { it.copy(contextMenuTarget = null) }
+        FileOpener.shareFile(getApplication<Application>(), File(item.path))
+    }
+
+    /** Compress a single file/folder into a new .zip next to it. */
+    fun compressItem(item: FileItem) {
+        val source = File(item.path)
+        val parent = source.parentFile ?: return
+        val baseName = source.name.let { if (source.isDirectory) it else it.substringBeforeLast('.', it) }
+        var output = File(parent, "$baseName.zip")
+        var i = 1
+        while (output.exists()) {
+            output = File(parent, "$baseName ($i).zip")
+            i++
+        }
+        _state.update {
+            it.copy(
+                contextMenuTarget = null,
+                archiveOpRunning = true,
+                archiveOpLabel = "กำลังบีบอัด ${source.name}",
+                archiveOpFile = "",
+                archiveOpPercent = 0,
+                archiveOpError = null
+            )
+        }
+        archiveJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                ArchiveEngine.compress(listOf(source), output, ArchiveFormat.ZIP) { name, percent ->
+                    _state.update { it.copy(archiveOpFile = name, archiveOpPercent = percent) }
+                }
+                _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "", archiveOpPercent = 100) }
+                refreshCurrentFolder()
+            } catch (e: CancellationException) {
+                _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "") }
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(archiveOpRunning = false, archiveOpFile = "", archiveOpError = e.message ?: "บีบอัดไม่สำเร็จ")
+                }
+            }
+        }
+    }
+
+    // ==================== Archive engine (extract) ====================
 
     fun dismissArchiveMenu() {
         _state.update { it.copy(archiveMenuTarget = null) }
@@ -204,22 +371,20 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
                 archiveOpRunning = true,
                 archiveOpLabel = "กำลังแตกไฟล์ ${archive.name}",
                 archiveOpFile = "",
+                archiveOpPercent = 0,
                 archiveOpError = null
             )
         }
         archiveJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                ArchiveEngine.extract(archive, destDir) { entryName ->
-                    _state.update { it.copy(archiveOpFile = entryName) }
+                ArchiveEngine.extract(archive, destDir) { entryName, percent ->
+                    _state.update { it.copy(archiveOpFile = entryName, archiveOpPercent = percent) }
                 }
-                _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "") }
+                _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "", archiveOpPercent = 100) }
                 if (_state.value.currentPath == destDir.parentFile?.absolutePath ||
                     _state.value.currentPath == destDir.absolutePath
                 ) {
-                    // trigger a refresh of the currently visible folder
-                    val path = _state.value.currentPath
-                    _state.update { it.copy(currentPath = "") }
-                    _state.update { it.copy(currentPath = path) }
+                    refreshCurrentFolder()
                 }
             } catch (e: CancellationException) {
                 _state.update { it.copy(archiveOpRunning = false, archiveOpFile = "") }

@@ -26,6 +26,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +54,9 @@ import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.log10
 import kotlin.math.pow
 
@@ -219,48 +224,55 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                     EmptyFolder()
                 }
                 else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    PullToRefreshBox(
+                        isRefreshing = state.isRefreshing,
+                        onRefresh = { viewModel.refreshCurrentFolder() },
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        if (atRoot) {
-                            if (state.usbAvailable) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            if (atRoot) {
+                                if (state.usbAvailable) {
+                                    item {
+                                        StorageCard(
+                                            icon = Icons.Outlined.Usb,
+                                            title = "USB OTG",
+                                            subtitle = "แตะเพื่อเลือกไดรฟ์ USB",
+                                            usedBytes = null,
+                                            totalBytes = null,
+                                            onClick = { usbPickerLauncher.launch(null) }
+                                        )
+                                    }
+                                    item { Spacer(Modifier.height(8.dp)) }
+                                }
                                 item {
-                                    StorageCard(
-                                        icon = Icons.Outlined.Usb,
-                                        title = "USB OTG",
-                                        subtitle = "แตะเพื่อเลือกไดรฟ์ USB",
-                                        usedBytes = null,
-                                        totalBytes = null,
-                                        onClick = { usbPickerLauncher.launch(null) }
-                                    )
+                                    ShortcutRow(Icons.Outlined.Download, "ดาวน์โหลด") {
+                                        viewModel.navigateTo("$rootPath/Download")
+                                    }
+                                }
+                                item {
+                                    ShortcutRow(Icons.Outlined.MusicNote, "เพลง") {
+                                        viewModel.navigateTo("$rootPath/Music")
+                                    }
+                                }
+                                item {
+                                    ShortcutRow(Icons.Outlined.Description, "เอกสาร") {
+                                        viewModel.navigateTo("$rootPath/Documents")
+                                    }
                                 }
                                 item { Spacer(Modifier.height(8.dp)) }
                             }
-                            item {
-                                ShortcutRow(Icons.Outlined.Download, "ดาวน์โหลด") {
-                                    viewModel.navigateTo("$rootPath/Download")
-                                }
-                            }
-                            item {
-                                ShortcutRow(Icons.Outlined.MusicNote, "เพลง") {
-                                    viewModel.navigateTo("$rootPath/Music")
-                                }
-                            }
-                            item {
-                                ShortcutRow(Icons.Outlined.Description, "เอกสาร") {
-                                    viewModel.navigateTo("$rootPath/Documents")
-                                }
-                            }
-                            item { Spacer(Modifier.height(8.dp)) }
-                        }
 
-                        items(fileList, key = { it.path }) { file ->
-                            FileManagerRow(
-                                file = file,
-                                onClick = { viewModel.openFile(file) }
-                            )
+                            items(fileList, key = { it.path }) { file ->
+                                FileManagerRow(
+                                    file = file,
+                                    onClick = { viewModel.openFile(file) },
+                                    onLongClick = { viewModel.showContextMenu(file) }
+                                )
+                            }
                         }
                     }
                 }
@@ -281,10 +293,62 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
             )
         }
 
+        state.contextMenuTarget?.let { target ->
+            ContextMenuSheet(
+                fileName = target.name,
+                onDismiss = { viewModel.dismissContextMenu() },
+                onCompress = { viewModel.compressItem(target) },
+                onInfo = { viewModel.showInfo(target) },
+                onCopy = { viewModel.startCopy(target) },
+                onMove = { viewModel.startMove(target) },
+                onDelete = { viewModel.requestDelete(target) },
+                onRename = { viewModel.requestRename(target) },
+                onShare = { viewModel.shareItem(target) }
+            )
+        }
+
+        state.renameTarget?.let { target ->
+            RenameDialog(
+                currentName = target.name,
+                onDismiss = { viewModel.dismissRename() },
+                onConfirm = { newName -> viewModel.confirmRename(newName) }
+            )
+        }
+
+        state.deleteConfirmTarget?.let { target ->
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissDeleteConfirm() },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.confirmDelete() }) {
+                        Text("ลบ", color = ZonColors.Danger)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.dismissDeleteConfirm() }) { Text("ยกเลิก") }
+                },
+                title = { Text("ลบ \"${target.name}\"?") },
+                text = { Text("ไม่สามารถกู้คืนได้หลังจากลบ") }
+            )
+        }
+
+        state.infoTarget?.let { target ->
+            InfoDialog(file = target, onDismiss = { viewModel.dismissInfo() })
+        }
+
+        state.clipboard?.let { clip ->
+            PasteBar(
+                count = clip.items.size,
+                isMove = clip.mode == ClipboardMode.MOVE,
+                onPaste = { viewModel.pasteClipboard() },
+                onCancel = { viewModel.cancelClipboard() }
+            )
+        }
+
         if (state.archiveOpRunning) {
             ArchiveProgressDialog(
                 label = state.archiveOpLabel,
                 fileName = state.archiveOpFile,
+                percent = state.archiveOpPercent,
                 onCancel = { viewModel.cancelArchiveOperation() }
             )
         }
@@ -295,7 +359,7 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                 confirmButton = {
                     TextButton(onClick = { viewModel.dismissArchiveError() }) { Text("ตกลง") }
                 },
-                title = { Text("แตกไฟล์ไม่สำเร็จ") },
+                title = { Text("ทำรายการไม่สำเร็จ") },
                 text = { Text(message) }
             )
         }
@@ -348,16 +412,38 @@ private fun ArchiveMenuRow(icon: ImageVector, title: String, onClick: () -> Unit
 }
 
 @Composable
-private fun ArchiveProgressDialog(label: String, fileName: String, onCancel: () -> Unit) {
+private fun ArchiveProgressDialog(label: String, fileName: String, percent: Int, onCancel: () -> Unit) {
     Dialog(onDismissRequest = {}) {
         Column(
             modifier = Modifier
                 .clip(RoundedCornerShape(16.dp))
                 .background(ZonColors.Surface)
-                .padding(24.dp),
+                .padding(24.dp)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CircularProgressIndicator(color = ZonColors.Accent)
+            Text(
+                "$percent%",
+                color = ZonColors.TextPrimary,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(12.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(ZonColors.DeepBlack)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = (percent / 100f).coerceIn(0f, 1f))
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(ZonColors.Accent)
+                )
+            }
             Spacer(Modifier.height(16.dp))
             Text(label, color = ZonColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             if (fileName.isNotBlank()) {
@@ -372,6 +458,120 @@ private fun ArchiveProgressDialog(label: String, fileName: String, onCancel: () 
             }
             Spacer(Modifier.height(16.dp))
             TextButton(onClick = onCancel) { Text("ยกเลิก") }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ContextMenuSheet(
+    fileName: String,
+    onDismiss: () -> Unit,
+    onCompress: () -> Unit,
+    onInfo: () -> Unit,
+    onCopy: () -> Unit,
+    onMove: () -> Unit,
+    onDelete: () -> Unit,
+    onRename: () -> Unit,
+    onShare: () -> Unit
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = ZonColors.Surface) {
+        Column(modifier = Modifier.padding(bottom = 24.dp)) {
+            Text(
+                fileName,
+                color = ZonColors.TextPrimary,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            )
+            HorizontalDivider(color = ZonColors.DeepBlack)
+            ArchiveMenuRow(Icons.Outlined.FolderZip, "บีบอัดไฟล์...", onCompress)
+            ArchiveMenuRow(Icons.Outlined.Info, "เกี่ยวกับ", onInfo)
+            ArchiveMenuRow(Icons.Outlined.ContentCopy, "คัดลอก", onCopy)
+            ArchiveMenuRow(Icons.Outlined.DriveFileMove, "ย้าย", onMove)
+            ArchiveMenuRow(Icons.Outlined.Delete, "ลบ", onDelete)
+            ArchiveMenuRow(Icons.Outlined.Edit, "เปลี่ยนชื่อ", onRename)
+            ArchiveMenuRow(Icons.Outlined.Share, "แชร์", onShare)
+        }
+    }
+}
+
+@Composable
+private fun RenameDialog(currentName: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+    var text by remember { mutableStateOf(currentName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }) { Text("ตกลง") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("ยกเลิก") }
+        },
+        title = { Text("เปลี่ยนชื่อ") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    )
+}
+
+@Composable
+private fun InfoDialog(file: FileItem, onDismiss: () -> Unit) {
+    val dateText = remember(file.lastModified) {
+        SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault()).format(Date(file.lastModified))
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("ปิด") }
+        },
+        title = { Text(file.name) },
+        text = {
+            Column {
+                InfoRow("ประเภท", if (file.isDirectory) "โฟลเดอร์" else "ไฟล์")
+                if (!file.isDirectory) InfoRow("ขนาด", file.getReadableSize())
+                InfoRow("แก้ไขล่าสุด", dateText)
+                InfoRow("ที่อยู่", file.path)
+            }
+        }
+    )
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(label, color = ZonColors.TextTertiary, fontSize = 11.sp)
+        Text(value, color = ZonColors.TextPrimary, fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun BoxScope.PasteBar(count: Int, isMove: Boolean, onPaste: () -> Unit, onCancel: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(16.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(ZonColors.SurfaceElevated)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            if (isMove) "ย้าย $count รายการ" else "คัดลอก $count รายการ",
+            color = ZonColors.TextPrimary,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(onClick = onCancel) { Text("ยกเลิก") }
+        Button(onClick = onPaste, colors = ButtonDefaults.buttonColors(containerColor = ZonColors.Accent)) {
+            Text("วาง")
         }
     }
 }
@@ -534,13 +734,14 @@ private fun formatBytes(bytes: Long): String {
 @Composable
 fun FileManagerRow(
     file: FileItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
