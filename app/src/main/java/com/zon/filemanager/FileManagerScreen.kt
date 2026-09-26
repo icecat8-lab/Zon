@@ -24,9 +24,16 @@ import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,6 +50,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -60,7 +68,7 @@ import java.util.Locale
 import kotlin.math.log10
 import kotlin.math.pow
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun FileManagerScreen(viewModel: FileManagerViewModel) {
     val state by viewModel.state.collectAsState()
@@ -210,74 +218,85 @@ fun FileManagerScreen(viewModel: FileManagerViewModel) {
                 .fillMaxSize()
                 .weight(1f)
         ) {
-            when {
-                !hasPermission -> {
-                    PermissionGate(onGrant = { requestAllFilesAccess() })
-                }
-                isLoading -> {
-                    CircularProgressIndicator(
-                        color = ZonColors.Accent,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                fileList.isEmpty() && !atRoot -> {
-                    EmptyFolder()
-                }
-                else -> {
-                    PullToRefreshBox(
-                        isRefreshing = state.isRefreshing,
-                        onRefresh = { viewModel.refreshCurrentFolder() },
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+            val viewState = when {
+                !hasPermission -> "permission"
+                isLoading -> "loading"
+                fileList.isEmpty() && !atRoot -> "empty"
+                else -> "list"
+            }
+            Crossfade(targetState = viewState, label = "fileManagerContent") { vs ->
+                when (vs) {
+                    "permission" -> {
+                        PermissionGate(onGrant = { requestAllFilesAccess() })
+                    }
+                    "loading" -> {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            CircularProgressIndicator(
+                                color = ZonColors.Accent,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                    }
+                    "empty" -> {
+                        EmptyFolder()
+                    }
+                    else -> {
+                        PullToRefreshBox(
+                            isRefreshing = state.isRefreshing,
+                            onRefresh = { viewModel.refreshCurrentFolder() },
+                            modifier = Modifier.fillMaxSize()
                         ) {
-                            if (atRoot) {
-                                if (state.usbAvailable) {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                if (atRoot) {
+                                    if (state.usbAvailable) {
+                                        item {
+                                            StorageCard(
+                                                icon = Icons.Outlined.Usb,
+                                                title = "USB OTG",
+                                                subtitle = "แตะเพื่อเลือกไดรฟ์ USB",
+                                                usedBytes = null,
+                                                totalBytes = null,
+                                                onClick = { usbPickerLauncher.launch(null) }
+                                            )
+                                        }
+                                        item { Spacer(Modifier.height(8.dp)) }
+                                    }
                                     item {
-                                        StorageCard(
-                                            icon = Icons.Outlined.Usb,
-                                            title = "USB OTG",
-                                            subtitle = "แตะเพื่อเลือกไดรฟ์ USB",
-                                            usedBytes = null,
-                                            totalBytes = null,
-                                            onClick = { usbPickerLauncher.launch(null) }
-                                        )
+                                        ShortcutRow(Icons.Outlined.Download, "ดาวน์โหลด") {
+                                            viewModel.navigateTo("$rootPath/Download")
+                                        }
+                                    }
+                                    item {
+                                        ShortcutRow(Icons.Outlined.MusicNote, "เพลง") {
+                                            viewModel.navigateTo("$rootPath/Music")
+                                        }
+                                    }
+                                    item {
+                                        ShortcutRow(Icons.Outlined.Description, "เอกสาร") {
+                                            viewModel.navigateTo("$rootPath/Documents")
+                                        }
                                     }
                                     item { Spacer(Modifier.height(8.dp)) }
                                 }
-                                item {
-                                    ShortcutRow(Icons.Outlined.Download, "ดาวน์โหลด") {
-                                        viewModel.navigateTo("$rootPath/Download")
-                                    }
-                                }
-                                item {
-                                    ShortcutRow(Icons.Outlined.MusicNote, "เพลง") {
-                                        viewModel.navigateTo("$rootPath/Music")
-                                    }
-                                }
-                                item {
-                                    ShortcutRow(Icons.Outlined.Description, "เอกสาร") {
-                                        viewModel.navigateTo("$rootPath/Documents")
-                                    }
-                                }
-                                item { Spacer(Modifier.height(8.dp)) }
-                            }
 
-                            items(fileList, key = { it.path }) { file ->
-                                FileManagerRow(
-                                    file = file,
-                                    onClick = { viewModel.openFile(file) },
-                                    onLongClick = { viewModel.showContextMenu(file) }
-                                )
+                                items(fileList, key = { it.path }) { file ->
+                                    FileManagerRow(
+                                        file = file,
+                                        onClick = { viewModel.openFile(file) },
+                                        onLongClick = { viewModel.showContextMenu(file) },
+                                        modifier = Modifier.animateItemPlacement()
+                                    )
+                                }
                             }
                         }
-                    }
                 }
             }
         }
+    }
     }
 
         state.archiveMenuTarget?.let { target ->
@@ -735,13 +754,30 @@ private fun formatBytes(bytes: Long): String {
 fun FileManagerRow(
     file: FileItem,
     onClick: () -> Unit,
-    onLongClick: () -> Unit = {}
+    onLongClick: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "rowScale"
+    )
     Row(
-        modifier = Modifier
+        modifier = modifier
+            .graphicsLayer { scaleX = scale; scaleY = scale }
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
